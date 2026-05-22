@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useTransactions } from "@/store/useTransactions";
 import { useSettings } from "@/store/useSettings";
 import { formatCurrency, formatCompactCurrency, cn } from "@/lib/utils";
@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { 
     Users, TrendingUp, TrendingDown, Scale, User
 } from "lucide-react";
+import { ResponsibleDetailModal } from "./ResponsibleDetailModal";
 
 // Componente Interno: Mini Gráfico de Tendencia (Sparkline)
 const Sparkline = ({ color }: { color: string }) => (
@@ -21,14 +22,15 @@ const Sparkline = ({ color }: { color: string }) => (
 );
 
 // Componente Interno: Tarjeta de Responsable Ejecutiva
-const ResponsibleCard = ({ name, stats }: { name: string, stats: any }) => {
+const ResponsibleCard = ({ name, stats, onClick }: { name: string, stats: any, onClick: () => void }) => {
     const isPositive = stats.balance >= 0;
     const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
 
     return (
         <motion.div 
+            onClick={onClick}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
-            className="group relative bg-[var(--theme-glass)] backdrop-blur-md border border-[var(--theme-border)] rounded-[2rem] p-6 shadow-2xl hover:bg-white/[0.04] transition-all duration-300 select-none"
+            className="group relative bg-[var(--theme-glass)] backdrop-blur-md border border-[var(--theme-border)] rounded-[2rem] p-6 shadow-2xl hover:bg-white/[0.04] transition-all duration-300 select-none cursor-pointer"
             style={{ WebkitTapHighlightColor: 'transparent' }}
         >
             {/* Header: Avatar + Nombre + Sparkline */}
@@ -96,6 +98,7 @@ const ResponsibleCard = ({ name, stats }: { name: string, stats: any }) => {
 export const ResponsibleStateWidget = () => {
     const { transactions } = useTransactions();
     const { responsibles } = useSettings();
+    const [selectedStats, setSelectedStats] = useState<any>(null);
 
     // Cálculo masivo de estadísticas para todos los responsables
     const allStats = useMemo(() => {
@@ -146,9 +149,17 @@ export const ResponsibleStateWidget = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-5 duration-700">
                     {allStats.map(stat => (
-                        <ResponsibleCard key={stat.id} name={stat.name} stats={stat} />
+                        <ResponsibleCard key={stat.id} name={stat.name} stats={stat} onClick={() => setSelectedStats(stat)} />
                     ))}
                 </div>
+            )}
+            
+            {selectedStats && (
+                <ResponsibleDetailModal 
+                    isOpen={!!selectedStats} 
+                    onClose={() => setSelectedStats(null)} 
+                    stats={selectedStats} 
+                />
             )}
         </section>
     );

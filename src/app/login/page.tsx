@@ -14,6 +14,7 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isRecovering, setIsRecovering] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [isRedirecting, setIsRedirecting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
@@ -22,6 +23,7 @@ export default function LoginPage() {
         const checkSession = async () => {
             const { data } = await supabase.auth.getSession();
             if (data.session) {
+                setIsRedirecting(true);
                 router.push("/dashboard");
             }
         };
@@ -76,6 +78,7 @@ export default function LoginPage() {
                     console.log("Login exitoso, registrando sesión única...");
                     // Registrar token de sesión única (invalida otros dispositivos)
                     await registerSessionToken(data.session.user.id);
+                    setIsRedirecting(true);
                     router.push("/dashboard");
                     router.refresh();
                 }
@@ -84,9 +87,32 @@ export default function LoginPage() {
             console.error("Error:", err.message);
             setError(err.message === "Invalid login credentials" ? "Correo o clave incorrectos" : err.message);
         } finally {
+            // Solo reseteamos el loading si NO estamos redirigiendo
             setLoading(false);
         }
     };
+
+    if (isRedirecting) {
+        return (
+            <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#050505] text-white">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-blue-600/10 blur-[100px] rounded-full" />
+                <div className="relative flex flex-col items-center gap-6">
+                    <div className="relative w-16 h-16">
+                        <div className="absolute inset-0 border-t-2 border-l-2 border-blue-500 rounded-full animate-spin" />
+                        <div className="absolute inset-2 border-b-2 border-r-2 border-blue-400/50 rounded-full animate-spin" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }} />
+                    </div>
+                    <div className="flex flex-col items-center gap-1">
+                        <h1 className="text-lg font-black tracking-tighter uppercase">
+                            MisFinanzas<span className="text-blue-500">Personales</span>
+                        </h1>
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 animate-pulse">
+                            Sincronizando Inteligencia...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">
