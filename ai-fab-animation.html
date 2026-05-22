@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Floating Action Button – Futuristic UI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:     #0af;
+      --cyan:     #0ff;
+      --purple:   #8b5cf6;
+      --pink:     #ec4899;
+      --white:    rgba(255,255,255,0.9);
+      --glow-b:   rgba(0, 170, 255, 0.6);
+      --glow-c:   rgba(0, 255, 255, 0.4);
+      --glow-p:   rgba(139, 92, 246, 0.5);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: #050810;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Background ambiance ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 30% 60%, rgba(0,120,255,.07) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 50% at 70% 30%, rgba(139,92,246,.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ── Scene wrapper ── */
+    .scene {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      width: 340px; height: 340px;
+    }
+
+    /* ── Cinematic slow zoom on the whole scene ── */
+    @keyframes cinemaZoom {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.035); }
+    }
+    .scene { animation: cinemaZoom 12s ease-in-out infinite; }
+
+    /* ── Floating motion ── */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate3d(1,.3,0, 0deg); }
+      33%       { transform: translateY(-10px) rotate3d(1,.3,0, 1.5deg); }
+      66%       { transform: translateY( 5px) rotate3d(1,.3,0,-1deg); }
+    }
+
+    /* ── Outer holographic aura rings ── */
+    .aura {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .aura-1 {
+      width: 290px; height: 290px;
+      border: 1px solid rgba(0,170,255,.15);
+      background: radial-gradient(ellipse at 35% 35%,
+        rgba(0,200,255,.06), transparent 65%);
+      animation: auraRotate 8s linear infinite, auraPulse 4s ease-in-out infinite;
+    }
+    .aura-2 {
+      width: 260px; height: 260px;
+      border: 1px solid rgba(139,92,246,.2);
+      animation: auraRotate 12s linear infinite reverse, auraPulse 5s ease-in-out infinite 1s;
+    }
+    .aura-3 {
+      width: 230px; height: 230px;
+      border: 1px solid rgba(0,255,255,.1);
+      animation: auraRotate 6s linear infinite, auraPulse 3.5s ease-in-out infinite 0.5s;
+    }
+
+    @keyframes auraRotate {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    @keyframes auraPulse {
+      0%, 100% { opacity: .4; transform: scale(1) rotate(var(--r,0deg)); }
+      50%       { opacity: 1;  transform: scale(1.03) rotate(var(--r,180deg)); }
+    }
+
+    /* ── Energy wave rings (emit outward) ── */
+    .wave {
+      position: absolute;
+      border-radius: 28px;
+      border: 1.5px solid;
+      pointer-events: none;
+      opacity: 0;
+      width: 90px; height: 90px;
+    }
+    .wave-1 { border-color: rgba(0,170,255,.8); animation: waveEmit 3s ease-out infinite 0s; }
+    .wave-2 { border-color: rgba(0,255,255,.6); animation: waveEmit 3s ease-out infinite 1s; }
+    .wave-3 { border-color: rgba(139,92,246,.6); animation: waveEmit 3s ease-out infinite 2s; }
+
+    @keyframes waveEmit {
+      0%   { opacity: .9; transform: scale(1); border-radius: 28px; }
+      100% { opacity: 0;  transform: scale(3.2); border-radius: 50%; }
+    }
+
+    /* ── FAB button ── */
+    .fab-wrapper {
+      position: relative;
+      width: 90px; height: 90px;
+      animation: float 7s ease-in-out infinite;
+      z-index: 10;
+    }
+
+    .fab {
+      position: relative;
+      width: 90px; height: 90px;
+      border-radius: 28px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .fab:hover { transform: scale(1.07); }
+    .fab:active { transform: scale(.96); }
+
+    /* glass body */
+    .fab-body {
+      position: absolute; inset: 0;
+      border-radius: 28px;
+      background: linear-gradient(
+        135deg,
+        rgba(0, 140, 255, 0.35) 0%,
+        rgba(0, 80, 180, 0.55) 40%,
+        rgba(80, 0, 180, 0.45) 100%
+      );
+      border: 1px solid rgba(255,255,255,.18);
+      backdrop-filter: blur(20px) saturate(180%);
+      overflow: hidden;
+    }
+
+    /* inner shimmer sweep */
+    .fab-body::before {
+      content: '';
+      position: absolute;
+      top: -60%; left: -60%;
+      width: 220%; height: 220%;
+      background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(0,220,255,.25) 60deg,
+        rgba(200,100,255,.2) 120deg,
+        transparent 180deg,
+        rgba(0,180,255,.15) 240deg,
+        transparent 360deg
+      );
+      animation: shimmerSpin 4s linear infinite;
+    }
+    @keyframes shimmerSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* liquid glass highlight */
+    .fab-body::after {
+      content: '';
+      position: absolute;
+      top: 8%; left: 10%;
+      width: 55%; height: 30%;
+      border-radius: 50%;
+      background: linear-gradient(
+        135deg,
+        rgba(255,255,255,.35) 0%,
+        rgba(255,255,255,.06) 100%
+      );
+      filter: blur(6px);
+      animation: highlightShift 6s ease-in-out infinite;
+    }
+    @keyframes highlightShift {
+      0%, 100% { top: 8%; left: 10%; opacity: .8; }
+      50%       { top: 12%; left: 15%; opacity: 1; }
+    }
+
+    /* neon glow box-shadow */
+    .fab-glow {
+      position: absolute; inset: 0;
+      border-radius: 28px;
+      animation: neonGlow 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes neonGlow {
+      0%, 100% {
+        box-shadow:
+          0 0 15px 3px  rgba(0,170,255,.5),
+          0 0 40px 8px  rgba(0,100,200,.35),
+          0 0 80px 15px rgba(139,92,246,.2),
+          inset 0 0 25px rgba(0,200,255,.12);
+      }
+      33% {
+        box-shadow:
+          0 0 20px 6px  rgba(0,220,255,.7),
+          0 0 60px 15px rgba(0,140,255,.45),
+          0 0 100px 25px rgba(139,92,246,.3),
+          inset 0 0 35px rgba(180,80,255,.15);
+      }
+      66% {
+        box-shadow:
+          0 0 18px 4px  rgba(139,92,246,.6),
+          0 0 50px 12px rgba(80,20,200,.4),
+          0 0 90px 20px rgba(0,200,255,.25),
+          inset 0 0 30px rgba(0,220,255,.1);
+      }
+    }
+
+    /* ── Plus icon ── */
+    .plus-icon {
+      position: relative; z-index: 5;
+      width: 32px; height: 32px;
+      animation: plusBreath 3s ease-in-out infinite, plusGlow 3s ease-in-out infinite;
+    }
+    .plus-h, .plus-v {
+      position: absolute;
+      background: #fff;
+      border-radius: 3px;
+      top: 50%; left: 50%;
+    }
+    .plus-h {
+      width: 24px; height: 3px;
+      transform: translate(-50%, -50%);
+    }
+    .plus-v {
+      width: 3px; height: 24px;
+      transform: translate(-50%, -50%);
+    }
+    @keyframes plusBreath {
+      0%, 100% { transform: scale(1);    opacity: .95; }
+      50%       { transform: scale(1.08); opacity: 1; }
+    }
+    @keyframes plusGlow {
+      0%, 100% { filter: drop-shadow(0 0 4px rgba(255,255,255,.8)); }
+      50%       { filter: drop-shadow(0 0 12px rgba(0,240,255,1)) drop-shadow(0 0 20px rgba(180,120,255,.8)); }
+    }
+
+    /* ── Neural network light trails canvas ── */
+    #neural { position: absolute; inset: 0; pointer-events: none; }
+
+    /* ── Floating particles ── */
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+
+    /* ── Breathing ring ── */
+    .breath-ring {
+      position: absolute;
+      border-radius: 32px;
+      width: 90px; height: 90px;
+      border: 1px solid rgba(0,200,255,.5);
+      animation: breathRing 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes breathRing {
+      0%, 100% { transform: scale(1);    opacity: .6; border-radius: 28px; }
+      50%       { transform: scale(1.15); opacity: 0;  border-radius: 50%; }
+    }
+
+    /* ── Edge energy lines ── */
+    .edge-energy {
+      position: absolute; inset: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .edge-line {
+      position: absolute;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      height: 1px;
+      animation: edgeSweep 2s ease-in-out infinite;
+    }
+    .edge-line:nth-child(1) { top: 0;   width: 100%; animation-delay: 0s; }
+    .edge-line:nth-child(2) { bottom: 0; width: 100%; animation-delay: 0.7s; background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+    .edge-v {
+      position: absolute;
+      background: linear-gradient(180deg, transparent, rgba(0,255,255,.7), transparent);
+      width: 1px;
+      animation: edgeSweepV 2.5s ease-in-out infinite;
+    }
+    .edge-v:nth-child(3) { left: 0;  height: 100%; animation-delay: 0.3s; }
+    .edge-v:nth-child(4) { right: 0; height: 100%; animation-delay: 1s; background: linear-gradient(180deg, transparent, rgba(139,92,246,.7), transparent); }
+
+    @keyframes edgeSweep {
+      0%   { transform: translateX(-100%); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { transform: translateX(100%); opacity: 0; }
+    }
+    @keyframes edgeSweepV {
+      0%   { transform: translateY(-100%); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { transform: translateY(100%); opacity: 0; }
+    }
+
+    /* ── Corner accents ── */
+    .corner {
+      position: absolute;
+      width: 12px; height: 12px;
+      border-color: rgba(0,220,255,.7);
+      border-style: solid;
+      pointer-events: none;
+      animation: cornerPulse 3s ease-in-out infinite;
+    }
+    .corner-tl { top: -2px; left: -2px; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; animation-delay: 0s; }
+    .corner-tr { top: -2px; right: -2px; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; animation-delay: .75s; }
+    .corner-bl { bottom: -2px; left: -2px; border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; animation-delay: 1.5s; }
+    .corner-br { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; animation-delay: 2.25s; }
+    @keyframes cornerPulse {
+      0%, 100% { opacity: .5; transform: scale(1); }
+      50%       { opacity: 1;  transform: scale(1.2); }
+    }
+
+    /* ── Label ── */
+    .label {
+      position: absolute;
+      bottom: 16px;
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(0,200,255,.45);
+      font-weight: 500;
+      animation: labelPulse 4s ease-in-out infinite;
+    }
+    @keyframes labelPulse {
+      0%, 100% { opacity: .4; }
+      50%       { opacity: .9; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="scene">
+  <canvas id="neural" width="340" height="340"></canvas>
+
+  <!-- Aura rings -->
+  <div class="aura aura-1"></div>
+  <div class="aura aura-2"></div>
+  <div class="aura aura-3"></div>
+
+  <!-- Energy waves -->
+  <div class="wave wave-1"></div>
+  <div class="wave wave-2"></div>
+  <div class="wave wave-3"></div>
+
+  <!-- Breathing ring -->
+  <div class="breath-ring"></div>
+
+  <!-- FAB -->
+  <div class="fab-wrapper">
+    <div class="fab" id="fab">
+      <div class="fab-body"></div>
+      <div class="fab-glow"></div>
+      <div class="edge-energy">
+        <div class="edge-line"></div>
+        <div class="edge-line"></div>
+        <div class="edge-v"></div>
+        <div class="edge-v"></div>
+      </div>
+      <!-- Corner accents -->
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <!-- Plus icon -->
+      <div class="plus-icon">
+        <div class="plus-h"></div>
+        <div class="plus-v"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="label">AI Interface</div>
+</div>
+
+<script>
+// ── Floating particles ──────────────────────────────────────────────────
+(function spawnParticles() {
+  const scene = document.querySelector('.scene');
+  const colors = [
+    'rgba(0,200,255,',
+    'rgba(139,92,246,',
+    'rgba(0,255,255,',
+    'rgba(180,100,255,',
+    'rgba(255,255,255,'
+  ];
+  const cx = 170, cy = 170, r = 130;
+
+  for (let i = 0; i < 38; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 3 + 1;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const alpha = (Math.random() * 0.6 + 0.2).toFixed(2);
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      background:${color}${alpha});
+      box-shadow: 0 0 ${size*3}px ${size}px ${color}0.5);
+    `;
+
+    // Random orbit angle & radius
+    const angle  = Math.random() * Math.PI * 2;
+    const orbitR = Math.random() * r + 30;
+    const speed  = (Math.random() * 12 + 6);   // seconds per revolution
+    const delay  = -(Math.random() * speed);     // negative = already started
+    const drift  = (Math.random() - 0.5) * 20;  // Y drift amplitude
+    const driftT = (Math.random() * 4 + 3);
+
+    p.style.setProperty('--cx', `${cx}px`);
+    p.style.setProperty('--cy', `${cy}px`);
+
+    // Inject a per-particle keyframe
+    const id = `orbit_${i}`;
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
+      @keyframes ${id} {
+        0%   { transform: translate(
+                  calc(${cx}px + ${(orbitR*Math.cos(angle)).toFixed(1)}px - 50%),
+                  calc(${cy}px + ${(orbitR*Math.sin(angle)).toFixed(1)}px - 50%)
+                ); opacity:${alpha}; }
+        25%  { transform: translate(
+                  calc(${cx}px + ${(orbitR*Math.cos(angle+Math.PI/2)).toFixed(1)}px - 50%),
+                  calc(${cy}px + ${(orbitR*Math.sin(angle+Math.PI/2)).toFixed(1)}px - 50% + ${drift}px)
+                ); opacity:${Math.min(+alpha+.15,1)}; }
+        50%  { transform: translate(
+                  calc(${cx}px + ${(orbitR*Math.cos(angle+Math.PI)).toFixed(1)}px - 50%),
+                  calc(${cy}px + ${(orbitR*Math.sin(angle+Math.PI)).toFixed(1)}px - 50%)
+                ); opacity:${alpha}; }
+        75%  { transform: translate(
+                  calc(${cx}px + ${(orbitR*Math.cos(angle+3*Math.PI/2)).toFixed(1)}px - 50%),
+                  calc(${cy}px + ${(orbitR*Math.sin(angle+3*Math.PI/2)).toFixed(1)}px - 50% - ${drift}px)
+                ); opacity:${Math.max(+alpha-.1,0.05)}; }
+        100% { transform: translate(
+                  calc(${cx}px + ${(orbitR*Math.cos(angle+Math.PI*2)).toFixed(1)}px - 50%),
+                  calc(${cy}px + ${(orbitR*Math.sin(angle+Math.PI*2)).toFixed(1)}px - 50%)
+                ); opacity:${alpha}; }
+      }
+    `;
+    document.head.appendChild(styleEl);
+
+    p.style.animation = `${id} ${speed}s linear infinite ${delay}s`;
+    p.style.position  = 'absolute';
+    p.style.borderRadius = '50%';
+    scene.appendChild(p);
+  }
+})();
+
+// ── Neural network light trails (Canvas) ───────────────────────────────
+(function neuralCanvas() {
+  const canvas = document.getElementById('neural');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+
+  // Nodes
+  const NODE_COUNT = 18;
+  const nodes = Array.from({length: NODE_COUNT}, () => {
+    const angle  = Math.random() * Math.PI * 2;
+    const radius = 60 + Math.random() * 100;
+    return {
+      x:   cx + Math.cos(angle) * radius,
+      y:   cy + Math.sin(angle) * radius,
+      vx:  (Math.random()-.5) * .4,
+      vy:  (Math.random()-.5) * .4,
+      radius,
+      angle,
+      speed: (Math.random()*.5+.2) * (Math.random()<.5?1:-1)
+    };
+  });
+
+  // Pulses travelling along edges
+  const pulses = [];
+  function spawnPulse() {
+    const a = Math.floor(Math.random() * NODE_COUNT);
+    let b   = Math.floor(Math.random() * NODE_COUNT);
+    while (b === a) b = Math.floor(Math.random() * NODE_COUNT);
+    const colors = ['rgba(0,200,255,', 'rgba(139,92,246,', 'rgba(0,255,200,'];
+    pulses.push({ a, b, t: 0, color: colors[Math.floor(Math.random()*colors.length)] });
+  }
+  setInterval(spawnPulse, 600);
+
+  function draw(ts) {
+    ctx.clearRect(0, 0, W, H);
+
+    // Update node orbits
+    nodes.forEach(n => {
+      n.angle += n.speed * 0.005;
+      n.x = cx + Math.cos(n.angle) * n.radius;
+      n.y = cy + Math.sin(n.angle) * n.radius;
+    });
+
+    // Draw edges
+    for (let i = 0; i < NODE_COUNT; i++) {
+      for (let j = i+1; j < NODE_COUNT; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const d  = Math.sqrt(dx*dx + dy*dy);
+        if (d < 120) {
+          const a = (1 - d/120) * 0.18;
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.strokeStyle = `rgba(0,180,255,${a})`;
+          ctx.lineWidth   = .7;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw nodes
+    nodes.forEach(n => {
+      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, 4);
+      g.addColorStop(0, 'rgba(0,220,255,.8)');
+      g.addColorStop(1, 'rgba(0,100,255,0)');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 3, 0, Math.PI*2);
+      ctx.fillStyle = g;
+      ctx.fill();
+    });
+
+    // Animate pulses
+    for (let i = pulses.length-1; i >= 0; i--) {
+      const p = pulses[i];
+      p.t += .018;
+      if (p.t > 1) { pulses.splice(i, 1); continue; }
+      const na = nodes[p.a], nb = nodes[p.b];
+      const px = na.x + (nb.x - na.x) * p.t;
+      const py = na.y + (nb.y - na.y) * p.t;
+      // Trail
+      const g = ctx.createRadialGradient(px, py, 0, px, py, 8);
+      g.addColorStop(0, `${p.color}0.9)`);
+      g.addColorStop(1, `${p.color}0)`);
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, Math.PI*2);
+      ctx.fillStyle = g;
+      ctx.fill();
+      // Line segment already passed
+      ctx.beginPath();
+      ctx.moveTo(na.x, na.y);
+      ctx.lineTo(px, py);
+      ctx.strokeStyle = `${p.color}${(.3*(1-p.t)).toFixed(2)})`;
+      ctx.lineWidth   = 1;
+      ctx.stroke();
+    }
+
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+// ── Tilt on mouse move ─────────────────────────────────────────────────
+(function tiltEffect() {
+  const fab = document.getElementById('fab');
+  document.addEventListener('mousemove', e => {
+    const rect = fab.getBoundingClientRect();
+    const cx   = rect.left + rect.width  / 2;
+    const cy   = rect.top  + rect.height / 2;
+    const dx   = (e.clientX - cx) / window.innerWidth  * 30;
+    const dy   = (e.clientY - cy) / window.innerHeight * 30;
+    fab.style.transform = `perspective(600px) rotateY(${dx}deg) rotateX(${-dy}deg) scale(1.03)`;
+  });
+  document.addEventListener('mouseleave', () => {
+    fab.style.transform = '';
+  });
+})();
+</script>
+</body>
+</html>

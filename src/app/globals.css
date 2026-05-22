@@ -1,0 +1,188 @@
+﻿@import "tailwindcss";
+
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+}
+
+/* Paletas de Acento Vibrante (data-theme) */
+[data-theme='blue'] {
+  --theme-400: #60a5fa;
+  --theme-500: #3b82f6;
+  --theme-600: #2563eb;
+  --theme-700: #1d4ed8;
+}
+
+[data-theme='emerald'] {
+  --theme-400: #34d399;
+  --theme-500: #10b981;
+  --theme-600: #059669;
+  --theme-700: #047857;
+}
+
+[data-theme='violet'] {
+  --theme-400: #a78bfa;
+  --theme-500: #8b5cf6;
+  --theme-600: #7c3aed;
+  --theme-700: #6d28d9;
+}
+
+[data-theme='amber'] {
+  --theme-400: #fbbf24;
+  --theme-500: #f59e0b;
+  --theme-600: #d97706;
+  --theme-700: #b45309;
+}
+
+[data-theme='rose'] {
+  --theme-400: #fb7185;
+  --theme-500: #f43f5e;
+  --theme-600: #e11d48;
+  --theme-700: #be123c;
+}
+
+[data-theme='cyan'] {
+  --theme-400: #22d3ee;
+  --theme-500: #06b6d4;
+  --theme-600: #0891b2;
+  --theme-700: #0e7490;
+}
+
+/* Temas de Fondo (data-bg) */
+:root, [data-bg='onyx'], [data-bg='pure'], [data-bg='ocean'], [data-bg='forest'], [data-bg='wine'] {
+  --theme-text: #ffffff;
+  --theme-text-muted: #94a3b8;
+  --theme-border: rgba(255, 255, 255, 0.1);
+  --theme-glass: rgba(255, 255, 255, 0.05);
+}
+
+:root, [data-bg='onyx'] {
+  --theme-bg: #050505;
+  --theme-surface: #0a0a0a;
+}
+
+[data-bg='pure'] {
+  --theme-bg: #000000;
+  --theme-surface: #050505;
+}
+
+[data-bg='ocean'] {
+  --theme-bg: #020617;
+  --theme-surface: #0f172a;
+}
+
+[data-bg='forest'] {
+  --theme-bg: #022c22;
+  --theme-surface: #064e3b;
+  --theme-glass: rgba(255, 255, 255, 0.08);
+}
+
+[data-bg='wine'] {
+  --theme-bg: #2d0a0a;
+  --theme-surface: #450a0a;
+  --theme-glass: rgba(255, 255, 255, 0.08);
+}
+
+/* Modo Claro Profesional (Nordic) */
+[data-bg='nordic'] {
+  --theme-bg: #ffffff;
+  --theme-surface: #f1f5f9;
+  --theme-text: #0f172a;
+  --theme-text-muted: #64748b;
+  --theme-border: rgba(0, 0, 0, 0.08);
+  --theme-glass: rgba(0, 0, 0, 0.04);
+}
+
+
+
+
+
+
+
+@theme {
+  --color-blue-400: var(--theme-400);
+  --color-blue-500: var(--theme-500);
+  --color-blue-600: var(--theme-600);
+  --color-blue-700: var(--theme-700);
+}
+
+html, body {
+  overflow-x: hidden;
+  position: relative;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-inter), system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "Android Emoji", "EmojiSymbols";
+  padding-top: var(--safe-area-inset-top);
+  padding-bottom: var(--safe-area-inset-bottom);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Fix iOS Zoom-on-focus */
+input:not(.input-amount-hero), select, textarea {
+  font-size: 16px !important;
+}
+
+/* Re-enable selection for inputs only */
+input, textarea {
+  user-select: text;
+}
+
+/* Animations (GPU Accelerated) */
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+  will-change: opacity, transform;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mic Pulse Animation */
+@keyframes mic-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.5); opacity: 0; }
+}
+
+/* Recharts Focus Fix (Windows/Android) */
+.recharts-wrapper, .recharts-surface {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   AI Orb FAB â€“ Living Sphere of Dots
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+.ai-orb-fab {
+  width: 80px;
+  height: 80px;
+  animation: ai-orb-float 7s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 10px rgba(0,160,255,0.65))
+    drop-shadow(0 0 28px rgba(110,30,255,0.35));
+  transition: filter 0.3s ease;
+}
+
+.ai-orb-fab:hover {
+  animation-play-state: paused;
+  filter:
+    drop-shadow(0 0 16px rgba(0,210,255,0.95))
+    drop-shadow(0 0 44px rgba(139,92,246,0.6));
+}
+
+.ai-orb-fab:active {
+  transform: scale(0.93);
+}
+
+@keyframes ai-orb-float {
+  0%,100% { transform: translateY(0px)   rotate(-1deg);   }
+  25%      { transform: translateY(-9px)  rotate(0.6deg);  }
+  50%      { transform: translateY(-5px)  rotate(1.2deg);  }
+  75%      { transform: translateY(-11px) rotate(-0.4deg); }
+}
+
+
