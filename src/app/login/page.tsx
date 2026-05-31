@@ -84,7 +84,6 @@ export default function LoginPage() {
                 }
             }
         } catch (err: any) {
-            console.error("Error:", err.message);
             setError(err.message === "Invalid login credentials" ? "Correo o clave incorrectos" : err.message);
         } finally {
             // Solo reseteamos el loading si NO estamos redirigiendo
