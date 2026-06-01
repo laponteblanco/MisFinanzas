@@ -67,7 +67,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans bg-[var(--theme-bg)] text-[var(--theme-text)] antialiased min-h-screen selection:bg-blue-500/30 transition-colors duration-500`}>
+      <body className={`${inter.variable} font-sans bg-[var(--theme-bg)] text-[var(--theme-text)] antialiased min-h-[100dvh] selection:bg-blue-500/30 transition-colors duration-500`}>
 
         {/* 2. Usamos el componente Script con un ID y la estrategia beforeInteractive */}
         <Script
