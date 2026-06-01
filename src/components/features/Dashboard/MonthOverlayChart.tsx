@@ -118,9 +118,9 @@ export const MonthOverlayChart = () => {
                             }}
                             labelFormatter={(v) => `DÍA ${v} DEL MES`}
                             labelStyle={{ color: '#94a3b8', fontWeight: 'bold', marginBottom: '8px', fontSize: '10px', letterSpacing: '0.1em' }}
-                            formatter={(value: any, name?: string) => [
+                            formatter={(value, name) => [
                                 formatCurrency(Number(value)),
-                                name || ''
+                                name != null ? String(name) : ''
                             ]}
                         />
                         <Legend 

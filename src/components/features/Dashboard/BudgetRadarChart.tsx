@@ -97,7 +97,7 @@ export const BudgetRadarChart = () => {
                             }}
                             itemStyle={{ fontSize: '11px', fontWeight: 'bold' }}
                             labelStyle={{ color: '#94a3b8', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase', fontSize: '10px' }}
-                            formatter={(value: any, name) => [
+                            formatter={(value, name) => [
                                 formatCurrency(Number(value)), 
                                 name === 'gasto' ? 'Gasto Real' : 'Presupuesto'
                             ]}

@@ -86,7 +86,7 @@ export const BalanceTrendChart = () => {
             
             <Tooltip 
               contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-              formatter={(v: any) => [formatCurrency(Number(v)), 'Saldo Neto']}
+              formatter={(v) => [formatCurrency(Number(v)), 'Saldo Neto']}
               labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontWeight: 'bold' }}
             />
             
