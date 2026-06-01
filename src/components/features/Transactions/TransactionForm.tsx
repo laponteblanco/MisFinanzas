@@ -16,7 +16,7 @@ interface TransactionFormProps {
 }
 
 export const TransactionForm = ({ isOpen, onClose }: TransactionFormProps) => {
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const { has_active_access } = useLicense();
     const addTransaction = useTransactions(state => state.addTransaction);
     const editTransaction = useTransactions(state => state.editTransaction);
@@ -70,7 +70,9 @@ export const TransactionForm = ({ isOpen, onClose }: TransactionFormProps) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user || !has_active_access) return;
+        const isAdmin = profile?.role === 'admin';
+        const hasAccess = has_active_access || isAdmin;
+        if (!user || !hasAccess) return;
         
         setLoading(true);
         setError(null);

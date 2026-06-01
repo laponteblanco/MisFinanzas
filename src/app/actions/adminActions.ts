@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function getAdminStats() {
+    try {
     // 1. Verificación de Autenticación y Autorización
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -12,8 +13,22 @@ export async function getAdminStats() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value;
+                getAll() {
+                    return cookieStore.getAll().map(cookie => ({
+                        name: cookie.name,
+                        value: cookie.value,
+                    }));
+                },
+                setAll(cookiesToSet) {
+                    try {
+                        cookiesToSet.forEach(({ name, value, options }) =>
+                            cookieStore.set(name, value, options)
+                        );
+                    } catch {
+                        // setAll is called from a Server Component where setting
+                        // cookies is not possible. This can be safely ignored if
+                        // you have middleware refreshing sessions.
+                    }
                 },
             },
         }
@@ -92,4 +107,8 @@ export async function getAdminStats() {
         totalTransactions: totalTransactions || 0,
         planDistribution
     };
+    } catch (error: any) {
+        console.error("[getAdminStats] Error:", error);
+        throw new Error(error?.message || "Error al obtener métricas de administración");
+    }
 }

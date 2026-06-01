@@ -75,7 +75,7 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="min-h-screen flex flex-col md:flex-row bg-[var(--theme-surface)] text-[var(--theme-text)] font-sans selection:bg-blue-500/30 relative pb-[80px] md:pb-0 overflow-x-hidden transition-colors duration-500">
+        <div className="min-h-screen flex flex-col md:flex-row bg-[var(--theme-surface)] text-[var(--theme-text)] font-sans selection:bg-blue-500/30 relative pb-[80px] landscape:pb-[56px] md:pb-0 overflow-x-hidden transition-colors duration-500">
             <div className="fixed top-0 left-0 right-0 z-[200]">
                 <TrialBanner />
             </div>
@@ -85,11 +85,11 @@ export default function DashboardLayout({
             )}
 
             <aside className={cn(
-                "w-full md:w-20 bg-[var(--theme-glass)] border-t md:border-r md:border-t-0 border-[var(--theme-border)] flex flex-row md:flex-col items-center justify-around md:justify-between p-4 md:py-8 fixed bottom-0 left-0 right-0 md:sticky md:top-0 md:h-screen z-[500] backdrop-blur-xl transition-all",
+                "w-full md:w-20 bg-[var(--theme-glass)] border-t md:border-r md:border-t-0 border-[var(--theme-border)] flex flex-row md:flex-col items-center justify-around md:justify-between p-4 landscape:p-2 md:py-8 fixed bottom-0 left-0 right-0 md:sticky md:top-0 md:h-screen z-[500] backdrop-blur-xl transition-all",
                 (!has_active_access && !isAdmin) && "blur-md opacity-40 pointer-events-none"
             )}>
                 <div className="hidden md:block text-2xl font-black text-blue-500 tracking-tighter">MFP</div>
-                <nav className="flex w-full md:w-auto flex-row md:flex-col items-center justify-around md:gap-8 min-h-[60px]">
+                <nav className="flex w-full md:w-auto flex-row md:flex-col items-center justify-around md:gap-8 min-h-[60px] landscape:min-h-[40px]">
                     <Link href="/dashboard" className={cn(
                         "transition-all min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl md:w-full md:py-3 cursor-pointer relative group",
                         pathname === "/dashboard" 
@@ -153,7 +153,7 @@ export default function DashboardLayout({
             </aside>
 
             <main className={cn(
-                "flex-1 relative transition-all duration-1000",
+                "flex-1 relative transition-all duration-1000 overflow-y-auto overflow-x-hidden",
                 !has_active_access && "blur-2xl opacity-20 pointer-events-none scale-95 origin-center"
             )}>
                 {children}

@@ -54,8 +54,8 @@ export const parseNumericString = (val: string): number => {
  */
 export const parseLocalDate = (dateStr: string) => {
   if (!dateStr) return new Date();
-  // Extraer solo la parte YYYY-MM-DD en caso de que venga con tiempo (ISO)
-  const cleanDate = dateStr.split('T')[0];
+  // Extraer solo la parte YYYY-MM-DD en caso de que venga con tiempo (ISO o con espacio)
+  const cleanDate = dateStr.split(/[T ]/)[0];
   const [y, m, d] = cleanDate.split('-').map(Number);
   
   if (isNaN(y) || isNaN(m) || isNaN(d)) return new Date();

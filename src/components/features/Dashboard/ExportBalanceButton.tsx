@@ -93,10 +93,20 @@ export const ExportBalanceButton = () => {
                 const txResponsibles = Array.isArray(tx.responsibles) ? tx.responsibles : [];
                 const responsiblesList = txResponsibles.map((r: any) => r.name).join(', ') || "General";
                 
-                // Manejo seguro de fecha (YYYY-MM-DD)
+                // Manejo seguro de fecha y hora (YYYY-MM-DD HH:mm)
                 let fechaStr = "N/A";
                 try {
-                    fechaStr = tx.date.split('T')[0];
+                    const dateObj = new Date(tx.date);
+                    if (!isNaN(dateObj.getTime())) {
+                        const yyyy = dateObj.getFullYear();
+                        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const dd = String(dateObj.getDate()).padStart(2, '0');
+                        const hh = String(dateObj.getHours()).padStart(2, '0');
+                        const min = String(dateObj.getMinutes()).padStart(2, '0');
+                        fechaStr = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+                    } else {
+                        fechaStr = tx.date;
+                    }
                 } catch (e) {
                     console.warn("Fecha inválida en transacción:", tx.id, tx.date);
                 }

@@ -104,9 +104,9 @@ export default function DashboardPage() {
     }, [transactions]);
 
     return (
-        <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700">
+        <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-8 landscape:space-y-4 animate-in fade-in duration-700">
             {/* HEADER ESTRATÉGICO ACTUALIZADO */}
-            <header className="space-y-6 mb-2">
+            <header className="space-y-6 landscape:space-y-2 mb-2">
                 <h1 className="text-xl font-black tracking-tighter">
                     MisFinanzas<span className="text-blue-600">Personales</span>
                 </h1>
@@ -126,7 +126,7 @@ export default function DashboardPage() {
                 {/* MÓDULO 1: MASTER CARD — Tu Patrimonio Global */}
                 <section
                     data-tour="balance-card"
-                    className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.02] p-6 sm:p-10 shadow-[0_32px_90px_-20px_rgba(0,0,0,0.9)] backdrop-blur-3xl"
+                    className="relative overflow-hidden rounded-[2.5rem] landscape:rounded-[1.5rem] border border-white/10 bg-white/[0.02] p-6 sm:p-10 landscape:p-4 shadow-[0_32px_90px_-20px_rgba(0,0,0,0.9)] backdrop-blur-3xl"
                 >
                     {/* Ambient glow */}
                     <div className="absolute -top-[40%] -left-[20%] w-[140%] h-[200%] bg-[radial-gradient(ellipse_at_top_left,rgba(56,189,248,0.15),transparent_60%)] pointer-events-none" />
@@ -136,14 +136,14 @@ export default function DashboardPage() {
                     <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-5 pointer-events-none" />
 
                     {/* Inner glass card */}
-                    <div className="relative bg-white/[0.03] backdrop-blur-2xl border border-white/[0.15] rounded-[2rem] px-5 py-6 sm:px-10 sm:py-8 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_0_50px_rgba(0,0,0,0.4)] transition-all duration-500 hover:border-white/30 hover:bg-white/[0.05]">
+                    <div className="relative bg-white/[0.03] backdrop-blur-2xl border border-white/[0.15] rounded-[2rem] landscape:rounded-[1.2rem] px-5 py-6 sm:px-10 sm:py-8 landscape:px-4 landscape:py-3 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_0_50px_rgba(0,0,0,0.4)] transition-all duration-500 hover:border-white/30 hover:bg-white/[0.05]">
                         
                         {/* Top LED edge */}
                         <div className="absolute inset-x-12 top-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
                         <div className="absolute inset-x-12 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
 
                         {/* Title */}
-                        <div className="flex items-center justify-center gap-2 mb-4">
+                        <div className="flex items-center justify-center gap-2 mb-4 landscape:mb-2">
                             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
                             <p className="text-sm sm:text-base font-black text-cyan-50 tracking-[0.2em] uppercase">
                                 Tu Patrimonio Global
@@ -151,9 +151,9 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Giant Balance — Glassy Glow Tone */}
-                        <div className="w-full flex justify-center mb-3">
+                        <div className="w-full flex justify-center mb-3 overflow-hidden">
                             <h2 
-                                className="text-[clamp(2.5rem,10vw,5.5rem)] font-black leading-none tracking-tighter whitespace-nowrap"
+                                className="text-[clamp(2rem,8vw,5.5rem)] landscape:text-[clamp(1.5rem,5vw,3rem)] font-black leading-none tracking-tighter whitespace-nowrap max-w-full"
                                 style={{
                                     background: 'linear-gradient(180deg, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%)',
                                     WebkitBackgroundClip: 'text',
@@ -167,10 +167,10 @@ export default function DashboardPage() {
 
                         {/* Sparkline Trend */}
                         {sparklinePoints && (
-                            <div className="w-full flex justify-center my-4 sm:my-8 relative">
+                            <div className="w-full flex justify-center my-4 sm:my-8 landscape:my-2 relative">
                                 <svg 
                                     viewBox="0 0 320 60" 
-                                    className="w-full max-w-[350px] h-[70px] drop-shadow-[0_0_12px_rgba(56,189,248,0.5)]"
+                                    className="w-full max-w-[350px] h-[70px] landscape:h-[40px] drop-shadow-[0_0_12px_rgba(56,189,248,0.5)]"
                                     preserveAspectRatio="none"
                                 >
                                     <defs>
@@ -198,15 +198,15 @@ export default function DashboardPage() {
                         )}
 
                         {/* Income / Expense Sub-cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+                        <div className="grid grid-cols-2 gap-4 landscape:gap-2 mt-8 landscape:mt-3">
                             {/* Ingresos - Glassy */}
-                            <div className="relative overflow-hidden flex items-center gap-4 bg-emerald-500/[0.03] backdrop-blur-xl border border-emerald-500/30 rounded-[1.5rem] px-5 py-4 transition-all duration-300 hover:bg-emerald-500/[0.08] hover:border-emerald-400/50 hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.3)] group">
+                            <div className="relative overflow-hidden flex items-center gap-4 landscape:gap-2 bg-emerald-500/[0.03] backdrop-blur-xl border border-emerald-500/30 rounded-[1.5rem] landscape:rounded-[1rem] px-5 py-4 landscape:px-3 landscape:py-2 transition-all duration-300 hover:bg-emerald-500/[0.08] hover:border-emerald-400/50 hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.3)] group">
                                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="relative shrink-0 w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] transition-transform group-hover:scale-110">
+                                <div className="relative shrink-0 w-12 h-12 landscape:w-8 landscape:h-8 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] transition-transform group-hover:scale-110">
                                     <ArrowUpRight size={24} strokeWidth={2.5} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                                 </div>
                                 <div className="relative flex flex-col items-start min-w-0">
-                                    <span className="text-emerald-300 text-sm sm:text-lg font-black tracking-tight leading-tight w-full drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">
+                                    <span className="text-emerald-300 text-sm sm:text-lg landscape:text-xs font-black tracking-tight leading-tight w-full drop-shadow-[0_0_10px_rgba(52,211,153,0.3)] truncate">
                                         + {formatCurrency(stats.income).replace('$', '$ ')}
                                     </span>
                                     <span className="text-[10px] font-black text-emerald-500/70 uppercase tracking-[0.2em] mt-0.5">
@@ -216,13 +216,13 @@ export default function DashboardPage() {
                             </div>
 
                             {/* Gastos - Glassy */}
-                            <div className="relative overflow-hidden flex items-center gap-4 bg-rose-500/[0.03] backdrop-blur-xl border border-rose-500/30 rounded-[1.5rem] px-5 py-4 transition-all duration-300 hover:bg-rose-500/[0.08] hover:border-rose-400/50 hover:shadow-[0_0_30px_-5px_rgba(244,63,94,0.3)] group">
+                            <div className="relative overflow-hidden flex items-center gap-4 landscape:gap-2 bg-rose-500/[0.03] backdrop-blur-xl border border-rose-500/30 rounded-[1.5rem] landscape:rounded-[1rem] px-5 py-4 landscape:px-3 landscape:py-2 transition-all duration-300 hover:bg-rose-500/[0.08] hover:border-rose-400/50 hover:shadow-[0_0_30px_-5px_rgba(244,63,94,0.3)] group">
                                 <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="relative shrink-0 w-12 h-12 rounded-xl bg-rose-500/20 border border-rose-400/30 flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] transition-transform group-hover:scale-110">
+                                <div className="relative shrink-0 w-12 h-12 landscape:w-8 landscape:h-8 rounded-xl bg-rose-500/20 border border-rose-400/30 flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] transition-transform group-hover:scale-110">
                                     <ArrowDownRight size={24} strokeWidth={2.5} className="text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.8)]" />
                                 </div>
                                 <div className="relative flex flex-col items-start min-w-0">
-                                    <span className="text-rose-300 text-sm sm:text-lg font-black tracking-tight leading-tight w-full drop-shadow-[0_0_10px_rgba(251,113,133,0.3)]">
+                                    <span className="text-rose-300 text-sm sm:text-lg landscape:text-xs font-black tracking-tight leading-tight w-full drop-shadow-[0_0_10px_rgba(251,113,133,0.3)] truncate">
                                         - {formatCurrency(stats.expense).replace('$', '$ ')}
                                     </span>
                                     <span className="text-[10px] font-black text-rose-500/70 uppercase tracking-[0.2em] mt-0.5">
