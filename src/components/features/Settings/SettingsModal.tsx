@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2, Tag, Users, Check, Sparkles, Pencil, MessageCircle, HelpCircle, User, Save, Palette } from "lucide-react";
+import { X, Plus, Trash2, Tag, Users, Check, Sparkles, Pencil, MessageCircle, HelpCircle, User, Save, Palette, Lock, KeyRound, Eye, EyeOff } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useAuth } from "@/hooks/useAuth";
 import { useSettings } from "@/store/useSettings";
@@ -28,6 +28,17 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [plans, setPlans] = useState<any[]>([]);
+
+    // Password change state
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [showCurrentPw, setShowCurrentPw] = useState(false);
+    const [showNewPw, setShowNewPw] = useState(false);
+    const [showConfirmPw, setShowConfirmPw] = useState(false);
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
+    const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
     const isTrialExpired = profile?.trial_end_at && new Date(profile.trial_end_at) < new Date();
 
@@ -515,6 +526,184 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                                 <span className="text-sm font-medium text-[var(--theme-text-muted)]">{user?.email}</span>
                                             </div>
                                         </div>
+
+                                        <div className="h-px bg-[var(--theme-glass)] w-full my-2" />
+
+                                        {/* Cambiar Contraseña */}
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-amber-600/10 rounded-lg">
+                                                    <KeyRound size={18} className="text-amber-400" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-black text-[var(--theme-text)] uppercase tracking-widest">Cambiar Contraseña</h4>
+                                                    <p className="text-[9px] text-slate-500 font-medium mt-0.5">Actualiza tu contraseña de acceso al sistema</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4 bg-white/[0.02] border border-[var(--theme-border)] rounded-3xl p-6">
+                                                {/* Contraseña Actual */}
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Contraseña Actual</label>
+                                                    <div className="relative">
+                                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                                                            <Lock size={16} />
+                                                        </div>
+                                                        <input
+                                                            type={showCurrentPw ? "text" : "password"}
+                                                            value={currentPassword}
+                                                            onChange={(e) => { setCurrentPassword(e.target.value); setPasswordError(null); setPasswordSuccess(null); }}
+                                                            placeholder="••••••••"
+                                                            className="w-full bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 pl-11 pr-12 rounded-2xl text-sm font-bold text-[var(--theme-text)] outline-none focus:border-blue-500/30 transition-all"
+                                                        />
+                                                        <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[var(--theme-text)] transition-colors">
+                                                            {showCurrentPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Nueva Contraseña */}
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nueva Contraseña</label>
+                                                    <div className="relative">
+                                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                                                            <KeyRound size={16} />
+                                                        </div>
+                                                        <input
+                                                            type={showNewPw ? "text" : "password"}
+                                                            value={newPassword}
+                                                            onChange={(e) => { setNewPassword(e.target.value); setPasswordError(null); setPasswordSuccess(null); }}
+                                                            placeholder="Mínimo 6 caracteres"
+                                                            className="w-full bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 pl-11 pr-12 rounded-2xl text-sm font-bold text-[var(--theme-text)] outline-none focus:border-blue-500/30 transition-all"
+                                                        />
+                                                        <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[var(--theme-text)] transition-colors">
+                                                            {showNewPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                        </button>
+                                                    </div>
+                                                    {/* Indicador de fuerza */}
+                                                    {newPassword.length > 0 && (
+                                                        <div className="flex items-center gap-2 mt-1 ml-1">
+                                                            <div className="flex gap-1 flex-1">
+                                                                {[1,2,3,4].map(i => (
+                                                                    <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                                                                        newPassword.length >= 6 && i <= 1 ? 'bg-rose-500' :
+                                                                        newPassword.length >= 8 && i <= 2 ? 'bg-amber-500' :
+                                                                        newPassword.length >= 10 && /[A-Z]/.test(newPassword) && i <= 3 ? 'bg-blue-500' :
+                                                                        newPassword.length >= 10 && /[A-Z]/.test(newPassword) && /[!@#$%^&*]/.test(newPassword) && i <= 4 ? 'bg-emerald-500' :
+                                                                        'bg-[var(--theme-glass)]'
+                                                                    }`} />
+                                                                ))}
+                                                            </div>
+                                                            <span className={`text-[9px] font-bold uppercase tracking-widest ${
+                                                                newPassword.length < 6 ? 'text-slate-500' :
+                                                                newPassword.length < 8 ? 'text-rose-500' :
+                                                                newPassword.length < 10 ? 'text-amber-500' :
+                                                                /[A-Z]/.test(newPassword) && /[!@#$%^&*]/.test(newPassword) ? 'text-emerald-500' : 'text-blue-500'
+                                                            }`}>
+                                                                {newPassword.length < 6 ? 'Muy corta' :
+                                                                 newPassword.length < 8 ? 'Débil' :
+                                                                 newPassword.length < 10 ? 'Aceptable' :
+                                                                 /[A-Z]/.test(newPassword) && /[!@#$%^&*]/.test(newPassword) ? 'Fuerte' : 'Buena'}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Confirmar Nueva Contraseña */}
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Confirmar Nueva Contraseña</label>
+                                                    <div className="relative">
+                                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                                                            <Lock size={16} />
+                                                        </div>
+                                                        <input
+                                                            type={showConfirmPw ? "text" : "password"}
+                                                            value={confirmPassword}
+                                                            onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(null); setPasswordSuccess(null); }}
+                                                            placeholder="Repite la nueva contraseña"
+                                                            className={`w-full bg-[var(--theme-glass)] border h-12 pl-11 pr-12 rounded-2xl text-sm font-bold text-[var(--theme-text)] outline-none transition-all ${
+                                                                confirmPassword && confirmPassword !== newPassword
+                                                                    ? 'border-rose-500/50 focus:border-rose-500'
+                                                                    : confirmPassword && confirmPassword === newPassword
+                                                                    ? 'border-emerald-500/50 focus:border-emerald-500'
+                                                                    : 'border-[var(--theme-border)] focus:border-blue-500/30'
+                                                            }`}
+                                                        />
+                                                        <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[var(--theme-text)] transition-colors">
+                                                            {showConfirmPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                        </button>
+                                                    </div>
+                                                    {confirmPassword && confirmPassword !== newPassword && (
+                                                        <p className="text-[9px] text-rose-400 font-bold ml-1">Las contraseñas no coinciden</p>
+                                                    )}
+                                                    {confirmPassword && confirmPassword === newPassword && newPassword.length >= 6 && (
+                                                        <p className="text-[9px] text-emerald-400 font-bold ml-1 flex items-center gap-1"><Check size={10} /> Las contraseñas coinciden</p>
+                                                    )}
+                                                </div>
+
+                                                {/* Mensajes de error/éxito */}
+                                                {passwordError && (
+                                                    <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl">
+                                                        <p className="text-[11px] text-rose-400 font-bold text-center">{passwordError}</p>
+                                                    </div>
+                                                )}
+                                                {passwordSuccess && (
+                                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                                        <p className="text-[11px] text-emerald-400 font-bold text-center">{passwordSuccess}</p>
+                                                    </div>
+                                                )}
+
+                                                {/* Botón de Guardar */}
+                                                <button
+                                                    disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword || newPassword.length < 6}
+                                                    onClick={async () => {
+                                                        setPasswordLoading(true);
+                                                        setPasswordError(null);
+                                                        setPasswordSuccess(null);
+                                                        try {
+                                                            // 1. Verificar contraseña actual haciendo sign in
+                                                            const { error: verifyError } = await supabase.auth.signInWithPassword({
+                                                                email: user?.email || '',
+                                                                password: currentPassword
+                                                            });
+                                                            if (verifyError) {
+                                                                setPasswordError('La contraseña actual es incorrecta');
+                                                                return;
+                                                            }
+                                                            // 2. Actualizar a la nueva contraseña
+                                                            const { error: updateError } = await supabase.auth.updateUser({
+                                                                password: newPassword
+                                                            });
+                                                            if (updateError) {
+                                                                setPasswordError(updateError.message === 'New password should be different from the old password.' 
+                                                                    ? 'La nueva contraseña debe ser diferente a la actual'
+                                                                    : updateError.message);
+                                                                return;
+                                                            }
+                                                            // 3. Éxito
+                                                            setPasswordSuccess('¡Contraseña actualizada exitosamente!');
+                                                            setCurrentPassword('');
+                                                            setNewPassword('');
+                                                            setConfirmPassword('');
+                                                            setShowCurrentPw(false);
+                                                            setShowNewPw(false);
+                                                            setShowConfirmPw(false);
+                                                            triggerSuccess();
+                                                        } catch (err: any) {
+                                                            setPasswordError(err.message || 'Error al cambiar la contraseña');
+                                                        } finally {
+                                                            setPasswordLoading(false);
+                                                        }
+                                                    }}
+                                                    className="w-full py-4 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-amber-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                >
+                                                    {passwordLoading ? <Sparkles className="animate-spin" size={16} /> : <KeyRound size={16} />}
+                                                    {passwordLoading ? 'Actualizando...' : 'Cambiar Contraseña'}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="h-px bg-[var(--theme-glass)] w-full my-2" />
 
                                         {/* Selector de Color de Letra / Acento */}
                                         <div className="flex flex-col gap-3">
