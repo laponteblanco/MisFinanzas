@@ -21,31 +21,31 @@ import { es } from 'date-fns/locale';
 import { useTransactions } from '@/store/useTransactions';
 import { useSettings } from '@/store/useSettings';
 import { formatCurrency, parseLocalDate } from '@/lib/utils';
+import { ChartTimeSelector } from './ChartTimeSelector';
 
 export const BudgetControlChart = () => {
     const transactions = useTransactions(state => state.transactions);
     const categories = useSettings(state => state.categories);
     const [isMounted, setIsMounted] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
+    const [selectedMonths, setSelectedMonths] = useState<number[]>([new Date().getMonth()]);
+    const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // 🗓️ Rango del mes actual
-    const now = new Date();
-    const range = { start: startOfMonth(now), end: endOfMonth(now) };
-    const monthName = format(now, 'MMMM', { locale: es }).replace(/^\w/, (c) => c.toUpperCase());
-
     // 📊 ESTRUCTURA DE DATOS ESPERADA (Fase de Transformación)
     const chartData = useMemo(() => {
-        // Calcular gasto real por categoría desde transacciones del MES ACTUAL
+        // Calcular gasto real por categoría según filtros
         const expenseByCat = transactions
             .filter(t => {
                 if (t.type !== 'expense') return false;
                 try {
                     const txDate = parseLocalDate(t.date);
-                    return isWithinInterval(txDate, range);
+                    const matchMonth = selectedMonths.length === 0 || selectedMonths.includes(txDate.getMonth());
+                    const matchYear = selectedYears.length === 0 || selectedYears.includes(txDate.getFullYear());
+                    return matchMonth && matchYear;
                 } catch (e) {
                     return false;
                 }
@@ -67,7 +67,7 @@ export const BudgetControlChart = () => {
                 execution: budgetLimit > 0 ? (realSpent / budgetLimit) * 100 : (realSpent > 0 ? 100 : 0)
             };
         }).sort((a, b) => b.real - a.real); // De mayor gasto a menor gasto real
-    }, [transactions, categories]);
+    }, [transactions, categories, selectedMonths, selectedYears]);
 
     if (!isMounted) return <div className="h-[400px] w-full bg-[var(--theme-glass)] animate-pulse rounded-[2.5rem]" />;
     if (chartData.length === 0) return null;
@@ -118,14 +118,22 @@ export const BudgetControlChart = () => {
             style={{ WebkitTapHighlightColor: 'transparent' }}
             onClick={() => setActiveIndex(null)}
         >
-            <div className="mb-8">
-                <h3 className="text-xl font-black text-[var(--theme-text)] tracking-tighter flex items-center gap-3">
-                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-                    Control de Presupuesto
-                </h3>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 mt-1 ml-4.5">
-                    Periodo: {monthName}
-                </p>
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div>
+                    <h3 className="text-xl font-black text-[var(--theme-text)] tracking-tighter flex items-center gap-3">
+                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                        Control de Presupuesto
+                    </h3>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 mt-1 ml-4.5">
+                        {selectedMonths.length > 0 ? "Filtro activo" : "Todos los periodos"}
+                    </p>
+                </div>
+                <ChartTimeSelector 
+                    selectedMonths={selectedMonths} 
+                    selectedYears={selectedYears} 
+                    onMonthChange={setSelectedMonths} 
+                    onYearChange={setSelectedYears} 
+                />
             </div>
             
             {/* Contenedor de Scroll Horizontal */}

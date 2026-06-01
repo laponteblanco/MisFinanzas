@@ -66,21 +66,31 @@ const MultiSelect = ({
     };
 
     return (
-        <div className="relative" ref={ref}>
+        <div className="relative" style={{ position: 'relative' }} ref={ref}>
             <div 
                 className="flex items-center gap-2 cursor-pointer bg-transparent text-xs font-bold text-slate-300 px-2 py-1 hover:text-white transition-colors"
                 onClick={() => setIsOpen(!isOpen)}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
             >
                 <span>{isAllSelected ? `Todos (${label})` : `${selectedValues.length} sel.`}</span>
                 <ChevronDown size={14} className="text-slate-500" />
             </div>
 
             {isOpen && (
-                <div className="absolute top-full right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-[999] max-h-60 overflow-y-auto custom-scrollbar">
+                <div 
+                    className="absolute top-full left-0 mt-2 w-48 bg-[#0b0f19] border border-slate-700 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] p-2 z-[9999] max-h-[50vh] overflow-y-auto custom-scrollbar"
+                    style={{ 
+                        position: 'absolute', 
+                        left: 0, 
+                        top: '100%',
+                        willChange: 'transform'
+                    }}
+                >
                     {allowAll && (
                         <div 
                             className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-800 rounded-lg cursor-pointer text-xs font-bold text-emerald-400"
                             onClick={toggleAll}
+                            style={{ WebkitTapHighlightColor: 'transparent' }}
                         >
                             {isAllSelected ? <CheckSquare size={14} /> : <Square size={14} />}
                             <span>Seleccionar Todos</span>
@@ -97,6 +107,7 @@ const MultiSelect = ({
                                     isSelected ? "text-white" : "text-slate-400"
                                 )}
                                 onClick={() => toggleOption(opt.value)}
+                                style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
                                 {isSelected ? <CheckSquare size={14} className="text-blue-500" /> : <Square size={14} />}
                                 <span>{opt.label}</span>
