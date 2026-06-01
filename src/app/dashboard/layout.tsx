@@ -12,6 +12,7 @@ import { AIFab } from "@/components/shared/AIFab";
 import { SettingsModal } from "@/components/features/Settings/SettingsModal";
 import { AdminPanel } from "@/components/features/Admin/AdminPanel";
 import { PricingGlass } from "@/components/features/Pricing/PricingGlass";
+import { ForcePasswordChangeModal } from "@/components/features/Auth/ForcePasswordChangeModal";
 import { TrialBanner } from "@/components/features/Pricing/TrialBanner";
 import { DashboardSkeleton } from "@/components/shared/DashboardSkeleton";
 import { motion } from "framer-motion";
@@ -191,6 +192,9 @@ export default function DashboardLayout({
 
             {/* Alertas Globales de Recordatorios */}
             <GlobalRemindersAlert />
+
+            {/* Modal Obligatorio de Cambio de Contraseña */}
+            <ForcePasswordChangeModal isOpen={profile?.force_password_change === true} />
 
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; }

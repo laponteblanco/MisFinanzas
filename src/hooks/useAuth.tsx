@@ -14,6 +14,7 @@ export interface UserProfile {
     trial_end_at?: string | null;
     subscription_status?: string | null;
     tour_completed: boolean;
+    force_password_change?: boolean;
 }
 
 interface AuthContextType {
