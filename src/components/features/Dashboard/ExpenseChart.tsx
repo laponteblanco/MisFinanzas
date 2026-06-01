@@ -139,8 +139,8 @@ export const ExpenseChart = () => {
                             const categoryTxs = transactions.filter(t => {
                                 if (t.type !== 'expense') return false;
                                 const date = parseLocalDate(t.date);
-                                const matchMonth = selectedMonth === "all" || date.getMonth() === selectedMonth;
-                                const matchYear = selectedYear === "all" || date.getFullYear() === selectedYear;
+                                const matchMonth = selectedMonths.length === 0 || selectedMonths.includes(date.getMonth());
+                                const matchYear = selectedYears.length === 0 || selectedYears.includes(date.getFullYear());
                                 return matchMonth && matchYear && ((t.category || "General").toUpperCase() === item.name);
                             });
 
