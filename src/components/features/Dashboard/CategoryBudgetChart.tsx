@@ -15,7 +15,8 @@ import {
 import { parseLocalDate } from "@/lib/utils";
 
 export const CategoryBudgetChart = () => {
-    const { transactions, budgets } = useTransactions();
+    const transactions = useTransactions(state => state.transactions);
+    const budgets = useTransactions(state => state.budgets);
     const [isMobile, setIsMobile] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
 

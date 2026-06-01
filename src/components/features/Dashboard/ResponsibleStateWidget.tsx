@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { useTransactions } from "@/store/useTransactions";
 import { useSettings } from "@/store/useSettings";
-import { formatCurrency, formatCompactCurrency, cn } from "@/lib/utils";
+import { formatCurrency, formatCompactCurrency, cn, parseLocalDate } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { 
     Users, TrendingUp, TrendingDown, Scale, User
 } from "lucide-react";
 import { ResponsibleDetailModal } from "./ResponsibleDetailModal";
+import { ChartTimeSelector } from "./ChartTimeSelector";
 
 // Componente Interno: Mini Gráfico de Tendencia (Sparkline)
 const Sparkline = ({ color }: { color: string }) => (
@@ -96,9 +97,22 @@ const ResponsibleCard = ({ name, stats, onClick }: { name: string, stats: any, o
 };
 
 export const ResponsibleStateWidget = () => {
-    const { transactions } = useTransactions();
-    const { responsibles } = useSettings();
+    const transactions = useTransactions(state => state.transactions);
+    const responsibles = useSettings(state => state.responsibles);
+    
+    const [selectedMonths, setSelectedMonths] = useState<number[]>([new Date().getMonth()]);
+    const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
     const [selectedStats, setSelectedStats] = useState<any>(null);
+
+    // Filtrado de transacciones
+    const filteredTransactions = useMemo(() => {
+        return transactions.filter(t => {
+            const date = parseLocalDate(t.date);
+            const matchMonth = selectedMonths.length === 0 || selectedMonths.includes(date.getMonth());
+            const matchYear = selectedYears.length === 0 || selectedYears.includes(date.getFullYear());
+            return matchMonth && matchYear;
+        });
+    }, [transactions, selectedMonths, selectedYears]);
 
     // Cálculo masivo de estadísticas para todos los responsables
     const allStats = useMemo(() => {
@@ -106,8 +120,9 @@ export const ResponsibleStateWidget = () => {
             let income = 0;
             let expense = 0;
 
-            transactions.forEach(tx => {
+            filteredTransactions.forEach(tx => {
                 const respMatch = tx.responsibles?.find(match => match.name === r.name);
+                
                 if (respMatch) {
                     const effectiveAmount = Number(tx.amount) * (respMatch.percentage / 100);
                     if (tx.type === 'income') income += effectiveAmount;
@@ -123,12 +138,12 @@ export const ResponsibleStateWidget = () => {
                 balance: income - expense
             };
         }).sort((a, b) => b.balance - a.balance); // Ordenar por desempeño financiero
-    }, [responsibles, transactions]);
+    }, [responsibles, filteredTransactions]);
 
     return (
         <section className="w-full relative z-20 space-y-8">
             {/* Header de la Sección */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 px-4 sm:px-0">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-4 sm:px-0">
                 <div className="flex items-center gap-4">
                     <div className="p-3 bg-blue-600/10 rounded-2xl border border-blue-500/20">
                         <Users size={24} className="text-blue-400" />
@@ -138,6 +153,12 @@ export const ResponsibleStateWidget = () => {
                         <p className="text-xs font-medium text-[var(--theme-text-muted)] mt-1">Explora el rendimiento y liquidez individual de tu equipo.</p>
                     </div>
                 </div>
+                <ChartTimeSelector 
+                    selectedMonths={selectedMonths} 
+                    selectedYears={selectedYears} 
+                    onMonthChange={setSelectedMonths} 
+                    onYearChange={setSelectedYears} 
+                />
             </div>
 
             {/* Grid de Tarjetas */}

@@ -17,7 +17,7 @@ interface ResponsibleDetailModalProps {
 }
 
 export const ResponsibleDetailModal = ({ isOpen, onClose, stats }: ResponsibleDetailModalProps) => {
-    const { transactions } = useTransactions();
+    const transactions = useTransactions(state => state.transactions);
 
     const responsibleTransactions = useMemo(() => {
         return transactions

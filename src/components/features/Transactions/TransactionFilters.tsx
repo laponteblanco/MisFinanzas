@@ -9,8 +9,11 @@ import { downloadExcel } from '@/lib/excel';
 import { cn } from '@/lib/utils';
 
 export const TransactionFilters = () => {
-    const { filters, setFilters, filteredTransactions, loading } = useTransactions();
-    const { responsibles } = useSettings();
+    const filters = useTransactions(state => state.filters);
+    const setFilters = useTransactions(state => state.setFilters);
+    const filteredTransactions = useTransactions(state => state.filteredTransactions);
+    const loading = useTransactions(state => state.loading);
+    const responsibles = useSettings(state => state.responsibles);
     const [isExporting, setIsExporting] = useState(false);
 
     const handleExport = async () => {

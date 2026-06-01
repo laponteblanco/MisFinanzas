@@ -2,9 +2,10 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { useTransactions } from "@/store/useTransactions";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, cn, parseLocalDate } from "@/lib/utils";
 import { Sparkles, AlertTriangle, TrendingUp, Info, Wallet, Home, Car, Zap, CreditCard, Film, Activity, Package, Tag, Utensils } from "lucide-react";
 import Link from "next/link";
+import { ChartTimeSelector } from "./ChartTimeSelector";
 
 // Mapeo Semántico de Categorías (Iconos y Gradientes Premium)
 const CATEGORY_META: Record<string, { icon: any, color: string, glow: string }> = {
@@ -21,32 +22,36 @@ const CATEGORY_META: Record<string, { icon: any, color: string, glow: string }> 
 const DEFAULT_META = { icon: Tag, color: 'bg-blue-500', glow: 'shadow-blue-500/20' };
 
 export const ExpenseChart = () => {
-    const { transactions } = useTransactions();
+    const transactions = useTransactions(state => state.transactions);
     const [isMounted, setIsMounted] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [selectedMonths, setSelectedMonths] = useState<number[]>([new Date().getMonth()]);
+    const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
     const { chartData, totalExpenses } = useMemo(() => {
-        const expenses = transactions.filter(t => t.type === 'expense');
+        const expenses = transactions.filter(t => {
+            if (t.type !== 'expense') return false;
+            const date = parseLocalDate(t.date);
+            const matchMonth = selectedMonths.length === 0 || selectedMonths.includes(date.getMonth());
+            const matchYear = selectedYears.length === 0 || selectedYears.includes(date.getFullYear());
+            return matchMonth && matchYear;
+        });
         const total = expenses.reduce((sum, curr) => sum + Number(curr.amount), 0);
         
-        const categoryTotals = expenses.reduce((acc: { [key: string]: number }, curr) => {
-            const cat = curr.category || "General";
-            acc[cat] = (acc[cat] || 0) + Number(curr.amount);
+        const catMap = expenses.reduce((acc: Map<string, any>, curr) => {
+            const cat = (curr.category || "General").toUpperCase();
+            const val = acc.get(cat) || { name: cat, value: 0, percentage: 0 };
+            val.value += Number(curr.amount);
+            val.percentage = total > 0 ? (val.value / total * 100) : 0;
+            acc.set(cat, val);
             return acc;
-        }, {});
+        }, new Map());
         
-        const sortedData = Object.keys(categoryTotals).map(name => {
-            const val = categoryTotals[name];
-            return {
-                name: name.toUpperCase(), 
-                value: val,
-                percentage: total > 0 ? (val / total * 100) : 0
-            };
-        }).sort((a, b) => b.value - a.value);
+        const sortedData = Array.from(catMap.values()).sort((a, b) => b.value - a.value);
 
         // Cálculo Pareto (Cumulativo)
         let cumulative = 0;
@@ -59,7 +64,7 @@ export const ExpenseChart = () => {
         });
         
         return { chartData: dataWithPareto, totalExpenses: total };
-    }, [transactions]);
+    }, [transactions, selectedMonths, selectedYears]);
 
     if (!isMounted) return <div className="h-[320px] w-full bg-[var(--theme-glass)] animate-pulse rounded-3xl" />;
 
@@ -91,7 +96,16 @@ export const ExpenseChart = () => {
 
     return (
         <div className="w-full h-full xl:max-h-[450px] overflow-y-auto overflow-x-hidden custom-scrollbar flex justify-center pb-10 pr-2">
-            <div className="w-full max-w-2xl flex flex-col space-y-10">
+            <div className="w-full max-w-2xl flex flex-col space-y-6">
+                
+                <div className="flex justify-end">
+                    <ChartTimeSelector 
+                        selectedMonths={selectedMonths} 
+                        selectedYears={selectedYears} 
+                        onMonthChange={setSelectedMonths} 
+                        onYearChange={setSelectedYears} 
+                    />
+                </div>
                 
                 {/* FINANCIAL ANALYSIS BOX (Analítica Pareto) */}
                 {insight && (
@@ -121,11 +135,14 @@ export const ExpenseChart = () => {
                             // Estado de selección
                             const isSelected = selectedCategory === item.name;
 
-                            // Transacciones de esta categoría para el acordeón
-                            const categoryTxs = transactions.filter(t => 
-                                t.type === 'expense' && 
-                                ((t.category || "General").toUpperCase() === item.name)
-                            );
+                            // Transacciones de esta categoría para el acordeón (filtradas por mes)
+                            const categoryTxs = transactions.filter(t => {
+                                if (t.type !== 'expense') return false;
+                                const date = parseLocalDate(t.date);
+                                const matchMonth = selectedMonth === "all" || date.getMonth() === selectedMonth;
+                                const matchYear = selectedYear === "all" || date.getFullYear() === selectedYear;
+                                return matchMonth && matchYear && ((t.category || "General").toUpperCase() === item.name);
+                            });
 
                             return (
                                 <div 

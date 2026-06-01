@@ -8,7 +8,7 @@ import { useTransactions } from "@/store/useTransactions";
 import { formatCurrency, parseLocalDate } from "@/lib/utils";
 
 export const BalanceTrendChart = () => {
-  const { transactions } = useTransactions();
+    const transactions = useTransactions(state => state.transactions);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {

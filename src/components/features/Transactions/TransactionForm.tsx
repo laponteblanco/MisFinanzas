@@ -18,16 +18,26 @@ interface TransactionFormProps {
 export const TransactionForm = ({ isOpen, onClose }: TransactionFormProps) => {
     const { user } = useAuth();
     const { has_active_access } = useLicense();
-    const { addTransaction, editTransaction, transactionToEdit, setTransactionToEdit } = useTransactions();
-    const { categories, responsibles: availableResponsibles, fetchSettings } = useSettings();
+    const addTransaction = useTransactions(state => state.addTransaction);
+    const editTransaction = useTransactions(state => state.editTransaction);
+    const transactionToEdit = useTransactions(state => state.transactionToEdit);
+    const setTransactionToEdit = useTransactions(state => state.setTransactionToEdit);
+    const categories = useSettings(state => state.categories);
+    const availableResponsibles = useSettings(state => state.responsibles);
+    const fetchSettings = useSettings(state => state.fetchSettings);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const getLocalDatetimeString = (d: Date) => {
+        const tzoffset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - tzoffset).toISOString().slice(0, 16);
+    };
 
     const [type, setType] = useState<'income' | 'expense'>('expense');
     const [amount, setAmount] = useState("");
     const [description, setDescription] = useState("");
     const [category, setCategory] = useState("");
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(getLocalDatetimeString(new Date()));
     const [responsibles, setResponsibles] = useState<any[]>([]);
 
     useEffect(() => {
@@ -42,11 +52,13 @@ export const TransactionForm = ({ isOpen, onClose }: TransactionFormProps) => {
             setAmount(transactionToEdit.amount.toString());
             setDescription(transactionToEdit.description || "");
             setCategory(transactionToEdit.category || "");
-            setDate(transactionToEdit.date.split('T')[0]);
+            let dateVal = transactionToEdit.date;
+            if (dateVal.length === 10) dateVal += "T00:00";
+            setDate(dateVal.slice(0, 16));
             setResponsibles(transactionToEdit.responsibles || []);
         } else {
             setType('expense'); setAmount(""); setDescription(""); setCategory("");
-            setResponsibles([]); setDate(new Date().toISOString().split('T')[0]);
+            setResponsibles([]); setDate(getLocalDatetimeString(new Date()));
             setError(null);
         }
     }, [isOpen, transactionToEdit]);
@@ -346,12 +358,12 @@ export const TransactionForm = ({ isOpen, onClose }: TransactionFormProps) => {
                             )}
                         </div>
 
-                        {/* Fecha de Operación */}
+                        {/* Fecha y Hora de Operación */}
                         <div className="space-y-2">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Fecha de Operación</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Fecha y Hora</p>
                             <div className="relative">
                                 <input 
-                                    type="date" 
+                                    type="datetime-local" 
                                     className="w-full bg-[var(--theme-glass)] border border-[var(--theme-border)] p-4 rounded-2xl outline-none focus:border-blue-500/50 text-sm font-medium text-[var(--theme-text)] custom-calendar-icon"
                                     value={date}
                                     onChange={(e) => setDate(e.target.value)}

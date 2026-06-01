@@ -23,8 +23,8 @@ import { useSettings } from '@/store/useSettings';
 import { formatCurrency, parseLocalDate } from '@/lib/utils';
 
 export const BudgetControlChart = () => {
-    const { transactions } = useTransactions();
-    const { categories } = useSettings();
+    const transactions = useTransactions(state => state.transactions);
+    const categories = useSettings(state => state.categories);
     const [isMounted, setIsMounted] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
 

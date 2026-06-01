@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSettings } from "@/store/useSettings";
 import { useTheme, ThemeColor, ThemeBackground } from "@/store/useTheme";
 import { formatNumberWithDots, parseNumericString } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -26,6 +27,9 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     const [editingResponsible, setEditingResponsible] = useState<string | null>(null);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [plans, setPlans] = useState<any[]>([]);
+
+    const isTrialExpired = profile?.trial_end_at && new Date(profile.trial_end_at) < new Date();
 
     const triggerSuccess = () => {
         confetti({
@@ -41,6 +45,10 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
         if (isOpen && user?.id) {
             fetchSettings(user.id);
             setTempDisplayName(profile?.display_name || "");
+            
+            supabase.from("plans").select("*").order("price_id", { ascending: true }).then(({ data }) => {
+                if (data) setPlans(data);
+            });
         }
     }, [isOpen, user?.id, fetchSettings, profile?.display_name]);
 
@@ -321,45 +329,133 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                 </div>
                             ))
                         ) : activeTab === 'soporte' ? (
-                            <div className="flex flex-col items-center justify-center py-10 px-4 text-center animate-in fade-in slide-in-from-bottom-5 duration-500">
-                                <div className="w-20 h-20 bg-[var(--theme-glass)] rounded-[2rem] flex items-center justify-center mb-6 shadow-inner border border-[var(--theme-border)]">
-                                    <MessageCircle size={40} className="text-[var(--theme-text)]" strokeWidth={1.5} />
+                            <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-5 duration-500 pb-10">
+                                
+                                {isTrialExpired && (
+                                    <div className="flex items-center gap-4 bg-yellow-500/10 border border-yellow-500/20 p-6 rounded-[2rem] text-left">
+                                        <div className="p-3 bg-yellow-500/20 rounded-2xl shrink-0">
+                                            <Sparkles size={24} className="text-yellow-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-black text-yellow-400 uppercase tracking-widest mb-1">Prueba Vencida</h4>
+                                            <p className="text-xs text-yellow-500/80 font-medium">Tu periodo de prueba gratuito ha finalizado. Actualiza a un plan Pro para seguir disfrutando de todas las funcionalidades sin interrupciones.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="flex flex-col items-center justify-center p-8 bg-[var(--theme-glass)] rounded-[2rem] border border-[var(--theme-border)] text-center h-full">
+                                        <MessageCircle size={32} className="text-blue-500 mb-4" strokeWidth={1.5} />
+                                        <h4 className="text-lg font-black text-[var(--theme-text)] tracking-tighter mb-2">Atención al Cliente</h4>
+                                        <p className="text-[10px] text-[var(--theme-text-muted)] leading-relaxed mb-6 px-4">
+                                            ¿Necesitas ayuda, asesoría o comprar una licencia? Escríbenos a WhatsApp sin compromiso.
+                                        </p>
+                                        <a 
+                                            href="https://wa.me/573144089333" 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="w-full flex items-center justify-center gap-2 py-3 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-xl font-bold shadow-[0_10px_30px_rgba(37,211,102,0.2)] transition-all active:scale-95 text-xs uppercase tracking-widest"
+                                        >
+                                            <MessageCircle size={16} fill="white" />
+                                            Chat de Soporte
+                                        </a>
+                                    </div>
+
+                                    <div className="p-8 bg-[var(--theme-glass)] border border-[var(--theme-border)] rounded-[2rem]">
+                                        <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 mb-4 flex items-center gap-2">
+                                            <Sparkles size={14} /> Nuestro Servicio
+                                        </h5>
+                                        <ul className="space-y-4">
+                                            <li className="flex items-start gap-3 text-xs text-slate-300">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                                                <span>Respuesta rápida garantizada.</span>
+                                            </li>
+                                            <li className="flex items-start gap-3 text-xs text-slate-300">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                                                <span>Soporte personalizado paso a paso.</span>
+                                            </li>
+                                            <li className="flex items-start gap-3 text-xs text-slate-300">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                                                <span>Asesoría sobre uso y suscripciones.</span>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
-                                
-                                <h4 className="text-2xl font-black text-[var(--theme-text)] tracking-tighter mb-4">Soporte Técnico</h4>
-                                
-                                <p className="text-sm text-[var(--theme-text-muted)] max-w-sm leading-relaxed mb-8">
-                                    Estamos disponibles para ayudarte. Si requieres asistencia técnica, deseas comprar una licencia o tienes alguna duda, escríbenos a WhatsApp sin compromiso.
-                                </p>
 
-                                <a 
-                                    href="https://wa.me/573144089333" 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-3 px-8 py-4 bg-[#25D366] hover:bg-[#20ba5a] text-[var(--theme-text)] rounded-[2rem] font-bold shadow-[0_20px_50px_rgba(37,211,102,0.3)] transition-all hover:scale-105 active:scale-95 mb-10"
-                                >
-                                    <MessageCircle size={24} fill="white" />
-                                    Abrir Chat en WhatsApp
-                                </a>
+                                <div className="mt-4">
+                                    <h4 className="text-lg font-black text-[var(--theme-text)] tracking-tighter mb-4 flex items-center gap-2">
+                                        <Tag size={20} className="text-blue-500" /> Planes de Suscripción
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {plans.filter((p: any) => ['Prueba 15 Días', 'Pro Mensual', 'Pro Semestral', 'Pro Anual'].includes(p.name)).map((plan: any) => {
+                                            let featuresObj: any = {};
+                                            try {
+                                                let raw = plan.features;
+                                                if (typeof raw === 'string') raw = JSON.parse(raw);
+                                                if (typeof raw === 'string') raw = JSON.parse(raw);
+                                                featuresObj = raw || {};
+                                            } catch (e) {
+                                                console.error("Error parseando features", e);
+                                            }
 
-                                <div className="w-full bg-white/[0.02] border border-[var(--theme-border)] rounded-[2.5rem] p-8 text-left max-w-md">
-                                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 mb-4 flex items-center gap-2">
-                                        <Sparkles size={14} /> Nuestro Servicio Incluye:
-                                    </h5>
-                                    <ul className="space-y-4">
-                                        <li className="flex items-start gap-3 text-xs text-slate-300">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                                            <span>Respuesta rápida garantizada.</span>
-                                        </li>
-                                        <li className="flex items-start gap-3 text-xs text-slate-300">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                                            <span>Soporte personalizado paso a paso.</span>
-                                        </li>
-                                        <li className="flex items-start gap-3 text-xs text-slate-300">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                                            <span>Asesoría sobre uso y suscripciones.</span>
-                                        </li>
-                                    </ul>
+                                            const isPro = plan.name.toLowerCase().includes('pro');
+                                            const isSemestral = plan.name.toLowerCase().includes('semestral');
+                                            const isAnual = plan.name.toLowerCase().includes('anual');
+                                            
+                                            // Extraer precio
+                                            const price = featuresObj.price || 0;
+                                            const displayFeatures = { ...featuresObj };
+                                            delete displayFeatures.price;
+
+                                            let discountPercentage = 0;
+                                            if (isSemestral) discountPercentage = Math.round(((48000 - price) / 48000) * 100);
+                                            if (isAnual) discountPercentage = Math.round(((96000 - price) / 96000) * 100);
+
+                                            return (
+                                                <div key={plan.id} className={`flex flex-col p-6 rounded-[2rem] border transition-all ${isPro ? 'bg-gradient-to-br from-blue-600/10 to-transparent border-blue-500/30' : 'bg-white/[0.02] border-[var(--theme-border)]'}`}>
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div>
+                                                            <h5 className="text-base font-black text-[var(--theme-text)] tracking-tighter">{plan.name}</h5>
+                                                            <div className="flex items-baseline gap-1 mt-1 mb-2">
+                                                                <span className="text-2xl font-black text-[var(--theme-text)] tracking-tighter">
+                                                                    ${formatNumberWithDots(price.toString())}
+                                                                </span>
+                                                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                                                    {price === 0 ? ' gratis' : ' COP'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                {(isSemestral || isAnual) && <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">🔥 Ahorras {discountPercentage}%</span>}
+                                                            </div>
+                                                        </div>
+                                                        {isPro && <span className="text-[8px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 mt-1">Recomendado</span>}
+                                                    </div>
+
+                                                    <ul className="space-y-2 flex-1 mb-6 mt-2">
+                                                        {Object.entries(displayFeatures).map(([key, val]) => (
+                                                            <li key={key} className="flex items-start gap-2 text-[10px] text-slate-400 font-medium">
+                                                                <Check size={12} className={val ? "text-emerald-500 shrink-0 mt-0.5" : "text-slate-600 shrink-0 mt-0.5 opacity-50"} />
+                                                                <span className={val ? "" : "opacity-50 line-through"}>
+                                                                    {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}: {val === true ? 'Sí' : val === false ? 'No' : String(val)}
+                                                                </span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+
+                                                    <button 
+                                                        onClick={() => {
+                                                            const phone = "573144089333";
+                                                            const text = encodeURIComponent(`¡Hola! Estoy interesado en adquirir la suscripción al ${plan.name} por $${formatNumberWithDots(price.toString())} COP.`);
+                                                            window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
+                                                        }}
+                                                        className={`w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isPro ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20' : 'bg-[var(--theme-glass)] hover:bg-white/10 text-[var(--theme-text)] border border-[var(--theme-border)]'}`}
+                                                    >
+                                                        {isPro ? 'Mejorar a Pro' : 'Plan Actual'}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         ) : activeTab === 'account' ? (

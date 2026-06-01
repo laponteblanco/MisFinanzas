@@ -16,7 +16,10 @@ import { TransactionFilters } from "./TransactionFilters";
  */
 export const TransactionList = () => {
     const { user } = useAuth();
-    const { filteredTransactions, fetchTransactions, loading, deleteTransaction } = useTransactions();
+    const filteredTransactions = useTransactions(state => state.filteredTransactions);
+    const fetchTransactions = useTransactions(state => state.fetchTransactions);
+    const loading = useTransactions(state => state.loading);
+    const deleteTransaction = useTransactions(state => state.deleteTransaction);
 
     useEffect(() => {
         if (user) fetchTransactions(user.id);
@@ -53,12 +56,31 @@ export const TransactionList = () => {
                             >
                                 <div className="flex flex-col gap-0.5">
                                     <span className="font-semibold text-sm">{tr.description || "Sin descripción"}</span>
-                                    <span className={cn(
-                                        "text-[10px] font-bold uppercase tracking-tighter",
-                                        tr.type === "income" ? "text-emerald-500" : "text-rose-500"
-                                    )}>
-                                        {tr.type === "income" ? "Ingreso" : "Gasto"}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={cn(
+                                            "text-[10px] font-bold uppercase tracking-tighter",
+                                            tr.type === "income" ? "text-emerald-500" : "text-rose-500"
+                                        )}>
+                                            {tr.type === "income" ? "Ingreso" : "Gasto"}
+                                        </span>
+                                        <span className="text-[10px] text-slate-500 font-medium">
+                                            • {(() => {
+                                                try {
+                                                    const d = new Date(tr.date);
+                                                    if (isNaN(d.getTime())) return tr.date;
+                                                    const hasTime = tr.date.includes('T');
+                                                    const datePart = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                                                    if (hasTime) {
+                                                        const timePart = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                                                        return `${datePart}, ${timePart}`;
+                                                    }
+                                                    return datePart;
+                                                } catch {
+                                                    return tr.date;
+                                                }
+                                            })()}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="flex items-center gap-4">

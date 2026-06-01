@@ -17,14 +17,15 @@ import { useSettings, Category } from '@/store/useSettings';
 import { formatCurrency } from '@/lib/utils';
 
 export const BudgetBarChart = () => {
-    const { transactions, budgets } = useTransactions();
+    const transactions = useTransactions(state => state.transactions);
+    const budgets = useTransactions(state => state.budgets);
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    const { categories } = useSettings(); // Para recuperar los emojis
+    const categories = useSettings(state => state.categories); // Para recuperar los emojis
 
     const data = useMemo(() => {
         // Calcular gasto real por categoría (ahora coincide con el nombre en DB)
