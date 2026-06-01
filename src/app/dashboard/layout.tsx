@@ -16,7 +16,6 @@ import { ForcePasswordChangeModal } from "@/components/features/Auth/ForcePasswo
 import { TrialBanner } from "@/components/features/Pricing/TrialBanner";
 import { DashboardSkeleton } from "@/components/shared/DashboardSkeleton";
 import { motion } from "framer-motion";
-import { useTour, TourButton, TourOverlay } from "@/components/features/Tour/GuidedTour";
 import { GlobalRemindersAlert } from "@/components/features/Reminders/GlobalRemindersAlert";
 import { cn } from "@/lib/utils";
 import { 
@@ -48,7 +47,6 @@ export default function DashboardLayout({
 
     const { isFormOpen, setIsFormOpen, fetchTransactions, transactions } = useTransactions();
     const router = useRouter();
-    const tour = useTour();
 
     // Sincronización: Cerrar modales al navegar
     useEffect(() => {
@@ -91,7 +89,7 @@ export default function DashboardLayout({
             )}>
                 <div className="hidden md:block text-2xl font-black text-blue-500 tracking-tighter">MFP</div>
                 <nav className="flex w-full md:w-auto flex-row md:flex-col items-center justify-around md:gap-8 min-h-[60px]">
-                    <Link href="/dashboard" data-tour="nav-dashboard" className={cn(
+                    <Link href="/dashboard" className={cn(
                         "transition-all min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl md:w-full md:py-3 cursor-pointer relative group",
                         pathname === "/dashboard" 
                             ? "bg-blue-600/10 text-blue-500 shadow-[inset_0_0_10px_rgba(59,130,246,0.05)]" 
@@ -102,7 +100,7 @@ export default function DashboardLayout({
                             <motion.div layoutId="nav-glow" className="absolute left-0 w-1 h-6 bg-blue-500 rounded-r-full hidden md:block" />
                         )}
                     </Link>
-                    <Link href="/dashboard/transactions" data-tour="nav-history" className={cn(
+                    <Link href="/dashboard/transactions" className={cn(
                         "transition-all min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl md:w-full md:py-3 cursor-pointer relative",
                         pathname === "/dashboard/transactions" 
                             ? "bg-blue-600/10 text-blue-500 shadow-[inset_0_0_10px_rgba(59,130,246,0.05)]" 
@@ -114,7 +112,7 @@ export default function DashboardLayout({
                         )}
                     </Link>
 
-                    <button onClick={() => setIsSettingsOpen(true)} data-tour="nav-settings" className={cn(
+                    <button onClick={() => setIsSettingsOpen(true)} className={cn(
                         "transition-all border border-transparent p-2 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center md:w-full md:py-3 cursor-pointer relative",
                         isSettingsOpen 
                             ? "bg-blue-600/10 text-blue-500 border-blue-500/20" 
@@ -147,9 +145,6 @@ export default function DashboardLayout({
                     <button onClick={() => signOut()} className="text-slate-500 hover:text-rose-500 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl md:w-full md:py-3 cursor-pointer">
                         <LogOut size={24} />
                     </button>
-
-                    {/* Botón de Tour Guiado */}
-                    <TourButton onClick={tour.startTour} />
                 </nav>
                 <div className="hidden md:flex w-10 h-10 rounded-full bg-blue-600 items-center justify-center font-black text-xs shadow-lg shadow-blue-600/20">
                     {displayName[0].toUpperCase()}
@@ -171,24 +166,12 @@ export default function DashboardLayout({
                 }}
                 disabled={plan_name === 'Free' && transactions.length >= 50}
                 hidden={!has_active_access && !isAdmin}
-                dataTour="fab-new"
                 title={plan_name === 'Free' && transactions.length >= 50 ? "Límite de plan alcanzado" : "Nuevo Movimiento"}
             />
 
             {isFormOpen && <TransactionForm isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} />}
             {isSettingsOpen && <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />}
             {isAdminOpen && <AdminPanel isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />}
-
-            {/* Tour Guiado */}
-            <TourOverlay
-                isActive={tour.isActive}
-                step={tour.step}
-                currentStep={tour.currentStep}
-                totalSteps={tour.totalSteps}
-                onNext={tour.nextStep}
-                onPrev={tour.prevStep}
-                onClose={tour.endTour}
-            />
 
             {/* Alertas Globales de Recordatorios */}
             <GlobalRemindersAlert />

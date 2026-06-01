@@ -25,6 +25,10 @@ export async function getAdminStats() {
         throw new Error("No autorizado");
     }
 
+    if (!supabaseAdmin) {
+        throw new Error("SUPABASE_SERVICE_ROLE_KEY no está configurada en las variables de entorno de este entorno (Netlify).");
+    }
+
     // Verificar si es administrador usando el service_role (bypasea RLS por seguridad)
     const { data: profile } = await supabaseAdmin
         .from('profiles')
