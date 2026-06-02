@@ -45,14 +45,52 @@ export async function getAdminStats() {
     }
 
     // Verificar si es administrador usando el service_role (bypasea RLS por seguridad)
-    const { data: profile } = await supabaseAdmin
+    const { data: profile, error: profileError } = await supabaseAdmin
         .from('profiles')
-        .select('role')
+        .select('*')
         .eq('id', session.user.id)
         .single();
 
-    if (profile?.role !== 'admin') {
-        throw new Error("Acceso denegado: Se requiere rol de administrador");
+    const loggedInEmail = session.user.email?.toLowerCase();
+    
+    // Si el usuario es el administrador principal por correo
+    if (loggedInEmail === 'luisaponteblanco@gmail.com') {
+        if (!profile || profile.role !== 'admin') {
+            console.log(`[getAdminStats] Detectado administrador principal ${loggedInEmail} con rol incorrecto o sin perfil. Auto-reparando...`);
+            
+            if (!profile) {
+                // Crear perfil si no existe
+                await supabaseAdmin.from('profiles').insert({
+                    id: session.user.id,
+                    email: session.user.email,
+                    display_name: 'Luis Aponte Blanco',
+                    role: 'admin',
+                    tour_completed: true,
+                    subscription_status: 'active'
+                });
+            } else {
+                // Actualizar a admin si existe pero no lo es
+                await supabaseAdmin.from('profiles')
+                    .update({ role: 'admin', subscription_status: 'active' })
+                    .eq('id', session.user.id);
+            }
+            
+            // Re-verificar
+            const { data: refreshedProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+            
+            if (refreshedProfile?.role !== 'admin') {
+                throw new Error(`Acceso denegado: No se pudo auto-reparar el perfil de administrador para ${session.user.email}`);
+            }
+        }
+    } else {
+        // Para cualquier otro usuario
+        if (!profile || profile.role !== 'admin') {
+            throw new Error(`Acceso denegado: Se requiere rol de administrador. Estás conectado como: ${session.user.email || 'correo desconocido'}`);
+        }
     }
 
     // 2. Extracción de Métricas (usando service_role para ver toda la BD)
