@@ -49,11 +49,15 @@ export const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
         // Fetch Stats
         setStatsLoading(true);
         try {
-            const data = await getAdminStats();
-            setStats(data);
-            setStatsError(null);
+            const response = await getAdminStats();
+            if (response.error) {
+                setStatsError(response.error);
+            } else {
+                setStats(response.data);
+                setStatsError(null);
+            }
         } catch (err: any) {
-            setStatsError(err.message);
+            setStatsError(err.message || "Error desconocido de red");
         } finally {
             setStatsLoading(false);
         }

@@ -101,14 +101,17 @@ export async function getAdminStats() {
     }));
 
     return {
-        totalUsers: totalUsers || 0,
-        activeUsers,
-        expiredTrialUsers,
-        totalTransactions: totalTransactions || 0,
-        planDistribution
+        data: {
+            totalUsers: totalUsers || 0,
+            activeUsers,
+            expiredTrialUsers,
+            totalTransactions: totalTransactions || 0,
+            planDistribution
+        },
+        error: null
     };
     } catch (error: any) {
         console.error("[getAdminStats] Error:", error);
-        throw new Error(error?.message || "Error al obtener métricas de administración");
+        return { data: null, error: error?.message || "Error al obtener métricas de administración" };
     }
 }
