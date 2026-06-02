@@ -203,7 +203,7 @@ export default function DashboardPage() {
                             <div className="relative overflow-hidden flex items-center gap-3 sm:gap-4 landscape:gap-2 bg-emerald-500/[0.03] backdrop-blur-xl border border-emerald-500/30 rounded-[1.5rem] landscape:rounded-[1rem] px-4 py-3 sm:px-5 sm:py-4 landscape:px-3 landscape:py-2 transition-all duration-300 hover:bg-emerald-500/[0.08] hover:border-emerald-400/50 hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.3)] group">
                                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <div className="relative shrink-0 w-10 h-10 sm:w-12 sm:h-12 landscape:w-8 landscape:h-8 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] transition-transform group-hover:scale-110">
-                                    <ArrowUpRight size={20} sm:size={24} strokeWidth={2.5} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                                    <ArrowUpRight size={22} strokeWidth={2.5} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                                 </div>
                                 <div className="relative flex flex-col items-start min-w-0">
                                     <span className="text-emerald-300 text-base sm:text-lg landscape:text-xs font-black tracking-tight leading-tight w-full drop-shadow-[0_0_10px_rgba(52,211,153,0.3)] truncate">
@@ -219,7 +219,7 @@ export default function DashboardPage() {
                             <div className="relative overflow-hidden flex items-center gap-3 sm:gap-4 landscape:gap-2 bg-rose-500/[0.03] backdrop-blur-xl border border-rose-500/30 rounded-[1.5rem] landscape:rounded-[1rem] px-4 py-3 sm:px-5 sm:py-4 landscape:px-3 landscape:py-2 transition-all duration-300 hover:bg-rose-500/[0.08] hover:border-rose-400/50 hover:shadow-[0_0_30px_-5px_rgba(244,63,94,0.3)] group">
                                 <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <div className="relative shrink-0 w-10 h-10 sm:w-12 sm:h-12 landscape:w-8 landscape:h-8 rounded-xl bg-rose-500/20 border border-rose-400/30 flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] transition-transform group-hover:scale-110">
-                                    <ArrowDownRight size={20} sm:size={24} strokeWidth={2.5} className="text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.8)]" />
+                                    <ArrowDownRight size={22} strokeWidth={2.5} className="text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.8)]" />
                                 </div>
                                 <div className="relative flex flex-col items-start min-w-0">
                                     <span className="text-rose-300 text-base sm:text-lg landscape:text-xs font-black tracking-tight leading-tight w-full drop-shadow-[0_0_10px_rgba(251,113,133,0.3)] truncate">
