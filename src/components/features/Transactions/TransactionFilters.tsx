@@ -31,12 +31,30 @@ export const TransactionFilters = () => {
                 const responsiblesList = txResponsibles.map((r: any) => r.name).join(', ') || "General";
                 const selectedNames = filters.responsible;
 
+                // Manejo seguro de fecha y hora (YYYY-MM-DD HH:mm)
+                let fechaStr = "N/A";
+                try {
+                    const dateObj = new Date(tx.date);
+                    if (!isNaN(dateObj.getTime())) {
+                        const yyyy = dateObj.getFullYear();
+                        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const dd = String(dateObj.getDate()).padStart(2, '0');
+                        const hh = String(dateObj.getHours()).padStart(2, '0');
+                        const min = String(dateObj.getMinutes()).padStart(2, '0');
+                        fechaStr = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+                    } else {
+                        fechaStr = tx.date;
+                    }
+                } catch (e) {
+                    console.warn("Fecha inválida en transacción:", tx.date);
+                }
+
                 if (selectedNames !== 'all' && selectedNames.length > 0) {
                     // Caso A: Filtro de responsables activo - Mostramos la parte de CADA responsable seleccionado
                     txResponsibles.forEach((r: any) => {
                         if (selectedNames.includes(r.name)) {
                             normalizedData.push({
-                                "Fecha": tx.date,
+                                "Fecha": fechaStr,
                                 "Concepto": tx.description || "Sin descripción",
                                 "Categoría": tx.category || "General",
                                 "Responsable": r.name,
@@ -51,7 +69,7 @@ export const TransactionFilters = () => {
                 } else {
                     // Caso B: Sin filtro o 'Todos' - Una fila por movimiento con la lista completa
                     normalizedData.push({
-                        "Fecha": tx.date,
+                        "Fecha": fechaStr,
                         "Concepto": tx.description || "Sin descripción",
                         "Categoría": tx.category || "General",
                         "Tipo": tx.type === 'income' ? "Ingreso" : "Egreso",
