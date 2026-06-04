@@ -109,7 +109,7 @@ export const ExpenseChart = () => {
                 
                 {/* FINANCIAL ANALYSIS BOX (Analítica Pareto) */}
                 {insight && (
-                    <div className={cn("p-5 rounded-[2rem] flex items-center gap-5 border backdrop-blur-xl transition-all duration-700 animate-in slide-in-from-top-4", insight.bg, insight.border)}>
+                    <div className={cn("p-5 rounded-[2rem] flex items-center gap-5 border transition-all duration-700 animate-in slide-in-from-top-4 transform-gpu", insight.bg, insight.border)}>
                         <div className={cn("p-3 rounded-2xl bg-[var(--theme-glass)] shadow-2xl shrink-0", insight.color)}>
                             <insight.icon size={22} strokeWidth={2.5} />
                         </div>
@@ -152,9 +152,9 @@ export const ExpenseChart = () => {
                                     className={cn(
                                         "relative group transition-all duration-300 cursor-pointer rounded-[2rem] p-5 border",
                                         isSelected 
-                                            ? "bg-white/[0.08] border-[var(--theme-border)] shadow-lg scale-[1.02]" 
-                                            : "bg-transparent border-transparent hover:bg-white/[0.03] active:scale-[0.98]",
-                                        !isParetoVital && !isSelected && "opacity-50 grayscale-[0.5] hover:opacity-100 hover:grayscale-0"
+                                            ? "bg-white/[0.08] border-[var(--theme-border)] shadow-lg scale-[1.02] transform-gpu" 
+                                            : "bg-transparent border-transparent hover:bg-white/[0.03] active:scale-[0.98] transform-gpu",
+                                        !isParetoVital && !isSelected && "opacity-50 hover:opacity-100"
                                     )}
                                 >
                                     
@@ -207,29 +207,19 @@ export const ExpenseChart = () => {
                                         {/* Barra de Progreso */}
                                         <div 
                                             className={cn(
-                                                "absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(255,255,255,0.1)]",
+                                                "absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-out shadow-sm transform-gpu",
                                                 meta.color,
-                                                isSelected || isTop ? "shadow-[0_0_30px_rgba(59,130,246,0.3)] brightness-125" : ""
+                                                isSelected || isTop ? "brightness-125" : ""
                                             )}
                                             style={{ width: `${item.percentage}%` }}
                                         />
 
-                                        {/* Glow Layer (Solo Vitales o Seleccionados) */}
-                                        {(isParetoVital || isSelected) && (
-                                            <div 
-                                                className={cn(
-                                                    "absolute top-0 left-0 h-full rounded-full blur-md flex opacity-30 transition-all duration-1000",
-                                                    meta.color,
-                                                    isSelected && "opacity-60 blur-lg"
-                                                )}
-                                                style={{ width: `${item.percentage}%` }}
-                                            />
-                                        )}
+
                                     </div>
 
                                     {/* 2. Acción al hacer clic: Mostrar Detalle (Acordeón) */}
                                     <div className={cn(
-                                        "overflow-hidden transition-all duration-500",
+                                        "overflow-hidden transition-all duration-500 transform-gpu",
                                         isSelected ? "max-h-[400px] mt-6 opacity-100 border-t border-[var(--theme-border)] pt-5" : "max-h-0 opacity-0 mt-0 pt-0 border-transparent"
                                     )}>
                                         <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-[var(--theme-text-muted)] mb-4 flex items-center justify-between">

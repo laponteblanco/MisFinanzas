@@ -16,10 +16,10 @@ import {
   Calendar,
   Target,
   Zap,
-  Navigation
+  Navigation,
+  TrendingUp
 } from "lucide-react";
 
-import { BudgetControlChart } from "@/components/features/Dashboard/BudgetControlChart";
 import { RemindersManager } from "@/components/features/Reminders/RemindersManager";
 import { SpendingHeatmap } from "@/components/features/Dashboard/SpendingHeatmap";
 import { ParetoChart } from "@/components/features/Dashboard/ParetoChart";
@@ -29,6 +29,7 @@ import { BudgetRadarChart } from "@/components/features/Dashboard/BudgetRadarCha
 const CashFlowChart = dynamic(() => import("@/components/features/Dashboard/CashFlowChart").then(mod => mod.CashFlowChart), { ssr: false });
 const ExpenseChart = dynamic(() => import("@/components/features/Dashboard/ExpenseChart").then(mod => mod.ExpenseChart), { ssr: false });
 const ResponsibleStateWidget = dynamic(() => import("@/components/features/Dashboard/ResponsibleStateWidget").then(mod => mod.ResponsibleStateWidget), { ssr: false });
+const BudgetBarChart = dynamic(() => import("@/components/features/Dashboard/BudgetBarChart").then(mod => mod.BudgetBarChart), { ssr: false });
 
 const PAGES = [
   {
@@ -44,10 +45,10 @@ const PAGES = [
     component: <CashFlowChart />
   },
   {
-    id: "budget",
-    title: "Control de Presupuesto",
-    icon: <Wallet size={18} />,
-    component: <BudgetControlChart />
+    id: "execution",
+    title: "Ejecución Presupuestal",
+    icon: <TrendingUp size={18} />,
+    component: <BudgetBarChart />
   },
   {
     id: "distribution",
