@@ -11,6 +11,7 @@ import { TransactionForm } from "@/components/features/Transactions/TransactionF
 import { AIFab } from "@/components/shared/AIFab";
 import dynamic from "next/dynamic";
 import { SettingsModal } from "@/components/features/Settings/SettingsModal";
+import { DictadoFinanciero } from "@/components/features/Transactions/DictadoFinanciero";
 const AdminPanel = dynamic(() => import("@/components/features/Admin/AdminPanel").then(mod => mod.AdminPanel), { ssr: false });
 import { PricingGlass } from "@/components/features/Pricing/PricingGlass";
 import { ForcePasswordChangeModal } from "@/components/features/Auth/ForcePasswordChangeModal";
@@ -44,6 +45,7 @@ export default function DashboardLayout({
     
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isAdminOpen, setIsAdminOpen] = useState(false);
+    const [isDictationOpen, setIsDictationOpen] = useState(false);
     const displayName = profile?.display_name || "Usuario";
 
     const { isFormOpen, setIsFormOpen, fetchTransactions, transactions } = useTransactions();
@@ -54,6 +56,7 @@ export default function DashboardLayout({
         setIsSettingsOpen(false);
         setIsAdminOpen(false);
         setIsFormOpen(false);
+        setIsDictationOpen(false);
     }, [pathname, setIsFormOpen]);
 
     useEffect(() => {
@@ -165,14 +168,20 @@ export default function DashboardLayout({
                     if (plan_name === 'Free' && transactions.length >= 50) return;
                     setIsFormOpen(true);
                 }}
+                onLongPress={() => {
+                    if (plan_name === 'Free' && transactions.length >= 50) return;
+                    setIsDictationOpen(true);
+                }}
                 disabled={plan_name === 'Free' && transactions.length >= 50}
                 hidden={!has_active_access && !isAdmin}
-                title={plan_name === 'Free' && transactions.length >= 50 ? "Límite de plan alcanzado" : "Nuevo Movimiento"}
+                isDictating={isDictationOpen}
+                title={plan_name === 'Free' && transactions.length >= 50 ? "Límite de plan alcanzado" : "Nuevo Movimiento (Mantén presionado para dictado por voz)"}
             />
 
             {isFormOpen && <TransactionForm isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} />}
             {isSettingsOpen && <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />}
             {isAdminOpen && <AdminPanel isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />}
+            {isDictationOpen && <DictadoFinanciero isOpen={isDictationOpen} onClose={() => setIsDictationOpen(false)} />}
 
             {/* Alertas Globales de Recordatorios */}
             <GlobalRemindersAlert />

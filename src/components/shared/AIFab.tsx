@@ -3,20 +3,52 @@
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
+import { Mic } from "lucide-react";
+
 interface AIFabProps {
   onClick: () => void;
+  onLongPress?: () => void;
   disabled?: boolean;
   hidden?: boolean;
   title?: string;
   dataTour?: string;
+  isDictating?: boolean;
 }
 
 const TAU = Math.PI * 2;
 
-export function AIFab({ onClick, disabled, hidden, title, dataTour }: AIFabProps) {
+export function AIFab({ onClick, onLongPress, disabled, hidden, title, dataTour, isDictating }: AIFabProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const animRef   = useRef<number>(0);
+  const pressTimer = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressTriggered = useRef<boolean>(false);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (disabled) return;
+    isLongPressTriggered.current = false;
+    if (onLongPress) {
+      pressTimer.current = setTimeout(() => {
+        isLongPressTriggered.current = true;
+        onLongPress();
+      }, 600); // 600ms for long press
+    }
+  };
+
+  const handlePointerUpOrLeave = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+      if (isLongPressTriggered.current) {
+          e.preventDefault();
+          return;
+      }
+      onClick();
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -274,20 +306,22 @@ export function AIFab({ onClick, disabled, hidden, title, dataTour }: AIFabProps
 
       ctx.restore();
 
-      /* ── 5. Plus Icon HUD overlay ── */
+      /* ── 5. Plus Icon or Mic HUD overlay ── */
       const plusAlpha = 0.85 + 0.15 * Math.sin(t * 3);
-      const armL = 8.5;
-      const armW = 2.5;
-
+      
       ctx.save();
       ctx.fillStyle = "#ffffff";
       ctx.shadowBlur = 10;
       ctx.shadowColor = "rgba(0, 245, 255, 0.9)";
       ctx.globalAlpha = plusAlpha;
 
-      // Draw cyber plus
-      ctx.fillRect(cx - armL, cy - armW / 2, armL * 2, armW);
-      ctx.fillRect(cx - armW / 2, cy - armL, armW, armL * 2);
+      if (!isDictating) {
+          const armL = 8.5;
+          const armW = 2.5;
+          // Draw cyber plus
+          ctx.fillRect(cx - armL, cy - armW / 2, armL * 2, armW);
+          ctx.fillRect(cx - armW / 2, cy - armL, armW, armL * 2);
+      }
       ctx.restore();
 
       animRef.current = requestAnimationFrame(draw);
@@ -307,19 +341,27 @@ export function AIFab({ onClick, disabled, hidden, title, dataTour }: AIFabProps
     <button
       ref={buttonRef}
       id="ai-fab"
-      onClick={onClick}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUpOrLeave}
+      onPointerLeave={handlePointerUpOrLeave}
       disabled={disabled}
       data-tour={dataTour}
       title={title}
       style={{ marginBottom: "env(safe-area-inset-bottom)" }}
       className={cn(
-        "ai-orb-fab",
+        "ai-orb-fab flex items-center justify-center",
         "fixed bottom-[4.5rem] right-6 md:bottom-10 md:right-10 z-[600]",
         "cursor-pointer select-none border-none outline-none bg-transparent p-0",
         disabled && "opacity-40 cursor-not-allowed grayscale"
       )}
     >
-      <canvas ref={canvasRef} className="block rounded-full" />
+      <canvas ref={canvasRef} className="block rounded-full absolute inset-0 w-full h-full" />
+      {isDictating && (
+         <div className="absolute inset-0 flex items-center justify-center z-10 text-white drop-shadow-[0_0_10px_rgba(0,245,255,0.8)] pointer-events-none">
+             <Mic size={32} className="animate-pulse" />
+         </div>
+      )}
     </button>
   );
 }
