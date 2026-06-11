@@ -410,7 +410,7 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
     const submitTransaction = (finalData: typeof data) => {
         if (!user) return;
         addTransaction({
-            user_id: user.id,
+            userId: user.id,
             type: finalData.tipo as any || 'expense',
             amount: finalData.monto,
             description: finalData.descripcion,
