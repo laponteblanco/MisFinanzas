@@ -21,13 +21,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { TransactionFilters } from "@/components/features/Transactions/TransactionFilters";
 
-// --- MAPEADOR DE EMOJIS (Lógica de Persona, Bebé, Bolsa) ---
-const getEmoji = (tx: Transaction) => {
-    if (tx.type === 'income') return '💰';
-    const cat = tx.category?.toLowerCase() || '';
-    if (cat.includes('bebe') || cat.includes('hij') || cat.includes('famili') || cat.includes('educa')) return '👶';
-    return '👤'; // Persona por defecto
-};
 
 // Componente de Tarjeta Moderna (Mobile-Centric)
 const TransactionCard = memo(({ tx, onEdit, onDelete }: { 
@@ -37,6 +30,11 @@ const TransactionCard = memo(({ tx, onEdit, onDelete }: {
 }) => {
     const isIncome = tx.type === 'income';
     const mainResponsible = tx.responsibles?.[0];
+    const categories = useSettings(state => state.categories);
+
+    const emoji = useMemo(() => {
+        return categories.find(c => c.name.trim().toLowerCase() === tx.category.trim().toLowerCase())?.emoji || (isIncome ? '💰' : '📦');
+    }, [categories, tx.category, isIncome]);
 
     return (
         <div className={cn(
@@ -49,7 +47,7 @@ const TransactionCard = memo(({ tx, onEdit, onDelete }: {
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
                         <div className="w-12 h-12 shrink-0 bg-[var(--theme-surface)] rounded-2xl flex items-center justify-center text-2xl shadow-inner border border-[var(--theme-border)]">
-                            {getEmoji(tx)}
+                            {emoji}
                         </div>
                         <div className="min-w-0 flex-1">
                             <h4 className="text-sm sm:text-base font-black text-white line-clamp-2 leading-tight uppercase tracking-tight group-hover:text-blue-400 transition-colors">

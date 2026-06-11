@@ -10,6 +10,8 @@ import { Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransactionFilters } from "./TransactionFilters";
 
+import { useSettings } from "@/store/useSettings";
+
 /**
  * Transaction List - SaaS Data Viewer
  * Premium History UI with Framer Motion and Advanced Filtering
@@ -20,6 +22,7 @@ export const TransactionList = () => {
     const fetchTransactions = useTransactions(state => state.fetchTransactions);
     const loading = useTransactions(state => state.loading);
     const deleteTransaction = useTransactions(state => state.deleteTransaction);
+    const categories = useSettings(state => state.categories);
 
     useEffect(() => {
         if (user) fetchTransactions(user.id);
@@ -57,6 +60,10 @@ export const TransactionList = () => {
                                 <div className="flex flex-col gap-0.5">
                                     <span className="font-semibold text-sm">{tr.description || "Sin descripción"}</span>
                                     <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded-md">
+                                            <span className="text-xs">{categories.find(c => c.name.trim().toLowerCase() === tr.category.trim().toLowerCase())?.emoji || '📦'}</span>
+                                            <span className="text-[10px] font-bold text-slate-300">{tr.category}</span>
+                                        </div>
                                         <span className={cn(
                                             "text-[10px] font-bold uppercase tracking-tighter",
                                             tr.type === "income" ? "text-emerald-500" : "text-rose-500"

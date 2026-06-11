@@ -3,11 +3,17 @@ import { supabase } from '@/lib/supabase';
 import { Reminder } from '@/types';
 import { addMonths, format, parseISO } from 'date-fns';
 
+// Cache TTL en milisegundos (60 segundos)
+const REMINDERS_CACHE_TTL = 60_000;
+
 interface RemindersState {
   reminders: Reminder[];
   loading: boolean;
   error: string | null;
-  fetchReminders: (userId: string) => Promise<void>;
+  _lastFetchedAt: number | null;
+  _cachedUserId: string | null;
+  fetchReminders: (userId: string, force?: boolean) => Promise<void>;
+  invalidateCache: () => void;
   addReminder: (reminder: Omit<Reminder, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateReminder: (id: string, updates: Partial<Reminder>) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
@@ -18,8 +24,28 @@ export const useReminders = create<RemindersState>((set, get) => ({
   reminders: [],
   loading: false,
   error: null,
+  _lastFetchedAt: null,
+  _cachedUserId: null,
 
-  fetchReminders: async (userId) => {
+  invalidateCache: () => {
+    set({ _lastFetchedAt: null });
+  },
+
+  fetchReminders: async (userId, force = false) => {
+    const { _lastFetchedAt, _cachedUserId, loading } = get();
+    const now = Date.now();
+
+    // Si el caché es válido y no se fuerza, no ir a la base de datos
+    if (
+        !force &&
+        !loading &&
+        _lastFetchedAt &&
+        _cachedUserId === userId &&
+        (now - _lastFetchedAt) < REMINDERS_CACHE_TTL
+    ) {
+        return; // ✅ Cache HIT
+    }
+
     set({ loading: true, error: null });
     try {
       const { data, error } = await supabase
@@ -29,7 +55,7 @@ export const useReminders = create<RemindersState>((set, get) => ({
         .order('due_date', { ascending: true });
 
       if (error) throw error;
-      set({ reminders: data || [], loading: false });
+      set({ reminders: data || [], loading: false, _lastFetchedAt: Date.now(), _cachedUserId: userId });
     } catch (err: any) {
       set({ error: err.message, loading: false });
     }
@@ -49,7 +75,8 @@ export const useReminders = create<RemindersState>((set, get) => ({
         reminders: [...state.reminders, data].sort((a, b) => 
           new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
         ), 
-        loading: false 
+        loading: false,
+        _lastFetchedAt: null
       }));
     } catch (err: any) {
       set({ error: err.message, loading: false });
@@ -66,7 +93,8 @@ export const useReminders = create<RemindersState>((set, get) => ({
 
       if (error) throw error;
       set((state) => ({
-        reminders: state.reminders.map((r) => (r.id === id ? { ...r, ...updates } : r))
+        reminders: state.reminders.map((r) => (r.id === id ? { ...r, ...updates } : r)),
+        _lastFetchedAt: null
       }));
     } catch (err: any) {
       set({ error: err.message });
@@ -78,7 +106,8 @@ export const useReminders = create<RemindersState>((set, get) => ({
       const { error } = await supabase.from('reminders').delete().eq('id', id);
       if (error) throw error;
       set((state) => ({
-        reminders: state.reminders.filter((r) => r.id !== id)
+        reminders: state.reminders.filter((r) => r.id !== id),
+        _lastFetchedAt: null
       }));
     } catch (err: any) {
       set({ error: err.message });

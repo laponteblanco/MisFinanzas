@@ -7,6 +7,7 @@ export interface Category {
     name: string;
     emoji: string;
     budget: number;
+    type: 'income' | 'expense';
 }
 
 export interface Responsible {
@@ -15,13 +16,19 @@ export interface Responsible {
     name: string;
 }
 
+// Cache TTL en milisegundos (60 segundos)
+const SETTINGS_CACHE_TTL = 60_000;
+
 interface SettingsState {
     categories: Category[];
     responsibles: Responsible[];
     loading: boolean;
+    _lastFetchedAt: number | null;
+    _cachedUserId: string | null;
     
-    fetchSettings: (userId: string) => Promise<void>;
-    addCategory: (userId: string, name: string, emoji: string, budget: number) => Promise<void>;
+    fetchSettings: (userId: string, force?: boolean) => Promise<void>;
+    invalidateCache: () => void;
+    addCategory: (userId: string, name: string, emoji: string, budget: number, type: 'income' | 'expense') => Promise<void>;
     updateCategory: (id: string, updates: Partial<Omit<Category, 'id' | 'user_id'>>) => Promise<void>;
     deleteCategory: (id: string) => Promise<void>;
     addResponsible: (userId: string, name: string) => Promise<void>;
@@ -33,8 +40,29 @@ export const useSettings = create<SettingsState>((set, get) => ({
     categories: [],
     responsibles: [],
     loading: false,
+    _lastFetchedAt: null,
+    _cachedUserId: null,
 
-    fetchSettings: async (userId: string) => {
+    invalidateCache: () => {
+        set({ _lastFetchedAt: null });
+    },
+
+    fetchSettings: async (userId: string, force = false) => {
+        const { _lastFetchedAt, _cachedUserId, loading } = get();
+        const now = Date.now();
+
+        // Si el caché es válido y no se fuerza, no ir a la base de datos
+        if (
+            !force &&
+            !loading &&
+            _lastFetchedAt &&
+            _cachedUserId === userId &&
+            (now - _lastFetchedAt) < SETTINGS_CACHE_TTL
+        ) {
+            return; // ✅ Cache HIT — ahorramos una llamada a Supabase
+        }
+
+        if (loading) return;
         set({ loading: true });
         
         try {
@@ -45,6 +73,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
 
             if (!catsRes.error) set({ categories: catsRes.data || [] });
             if (!respsRes.error) set({ responsibles: respsRes.data || [] });
+            set({ _lastFetchedAt: Date.now(), _cachedUserId: userId });
         } catch (err) {
             console.error("Error al cargar settings:", err);
         } finally {
@@ -52,15 +81,15 @@ export const useSettings = create<SettingsState>((set, get) => ({
         }
     },
 
-    addCategory: async (userId, name, emoji, budget) => {
+    addCategory: async (userId, name, emoji, budget, type) => {
         const { data, error } = await supabase
             .from("categories")
-            .insert({ user_id: userId, name, emoji, budget })
+            .insert({ user_id: userId, name, emoji, budget, type })
             .select()
             .single();
         
         if (!error && data) {
-            set(state => ({ categories: [...state.categories, data] }));
+            set(state => ({ categories: [...state.categories, data], _lastFetchedAt: null }));
         }
     },
 
@@ -74,7 +103,8 @@ export const useSettings = create<SettingsState>((set, get) => ({
         
         if (!error && data) {
             set(state => ({ 
-                categories: state.categories.map(c => c.id === id ? data : c) 
+                categories: state.categories.map(c => c.id === id ? data : c),
+                _lastFetchedAt: null
             }));
         }
     },
@@ -86,7 +116,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
             .eq("id", id);
         
         if (!error) {
-            set(state => ({ categories: state.categories.filter(c => c.id !== id) }));
+            set(state => ({ categories: state.categories.filter(c => c.id !== id), _lastFetchedAt: null }));
         }
     },
 
@@ -98,7 +128,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
             .single();
         
         if (!error && data) {
-            set(state => ({ responsibles: [...state.responsibles, data] }));
+            set(state => ({ responsibles: [...state.responsibles, data], _lastFetchedAt: null }));
         }
     },
 
@@ -112,7 +142,8 @@ export const useSettings = create<SettingsState>((set, get) => ({
         
         if (!error && data) {
             set(state => ({ 
-                responsibles: state.responsibles.map(r => r.id === id ? data : r) 
+                responsibles: state.responsibles.map(r => r.id === id ? data : r),
+                _lastFetchedAt: null
             }));
         }
     },
@@ -124,7 +155,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
             .eq("id", id);
         
         if (!error) {
-            set(state => ({ responsibles: state.responsibles.filter(r => r.id !== id) }));
+            set(state => ({ responsibles: state.responsibles.filter(r => r.id !== id), _lastFetchedAt: null }));
         }
     }
 }));

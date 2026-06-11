@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useDeferredValue } from "react";
 import { useTransactions } from "@/store/useTransactions";
 import { formatCurrency, cn, parseLocalDate } from "@/lib/utils";
 import { Sparkles, AlertTriangle, TrendingUp, Info, Wallet, Home, Car, Zap, CreditCard, Film, Activity, Package, Tag, Utensils } from "lucide-react";
@@ -32,12 +32,16 @@ export const ExpenseChart = () => {
         setIsMounted(true);
     }, []);
 
+    const deferredMonths = useDeferredValue(selectedMonths);
+    const deferredYears = useDeferredValue(selectedYears);
+    const deferredTransactions = useDeferredValue(transactions);
+
     const { chartData, totalExpenses } = useMemo(() => {
-        const expenses = transactions.filter(t => {
+        const expenses = deferredTransactions.filter(t => {
             if (t.type !== 'expense') return false;
             const date = parseLocalDate(t.date);
-            const matchMonth = selectedMonths.length === 0 || selectedMonths.includes(date.getMonth());
-            const matchYear = selectedYears.length === 0 || selectedYears.includes(date.getFullYear());
+            const matchMonth = deferredMonths.length === 0 || deferredMonths.includes(date.getMonth());
+            const matchYear = deferredYears.length === 0 || deferredYears.includes(date.getFullYear());
             return matchMonth && matchYear;
         });
         const total = expenses.reduce((sum, curr) => sum + Number(curr.amount), 0);
@@ -64,7 +68,7 @@ export const ExpenseChart = () => {
         });
         
         return { chartData: dataWithPareto, totalExpenses: total };
-    }, [transactions, selectedMonths, selectedYears]);
+    }, [deferredTransactions, deferredMonths, deferredYears]);
 
     if (!isMounted) return <div className="h-[320px] w-full bg-[var(--theme-glass)] animate-pulse rounded-3xl" />;
 

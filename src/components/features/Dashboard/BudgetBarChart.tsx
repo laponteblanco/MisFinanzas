@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useDeferredValue } from 'react';
 import { 
     BarChart, 
     Bar, 
@@ -26,20 +26,25 @@ export const BudgetBarChart = () => {
     const [isMounted, setIsMounted] = useState(false);
     const [selectedMonths, setSelectedMonths] = useState<number[]>([new Date().getMonth()]);
     const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
+    const [txType, setTxType] = useState<'expense' | 'income'>('expense');
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
+    const deferredMonths = useDeferredValue(selectedMonths);
+    const deferredYears = useDeferredValue(selectedYears);
+    const deferredTransactions = useDeferredValue(transactions);
+
     const { globalBudget, globalSpent, executionPercentage, chartData } = useMemo(() => {
-        // Calculate real expense by category matching the selected month/year
-        const expenseByCat = transactions
+        // Calculate real amount by category matching the selected month/year
+        const amountByCat = deferredTransactions
             .filter(t => {
-                if (t.type !== 'expense') return false;
+                if (t.type !== txType) return false;
                 try {
                     const txDate = parseLocalDate(t.date);
-                    const matchMonth = selectedMonths.length === 0 || selectedMonths.includes(txDate.getMonth());
-                    const matchYear = selectedYears.length === 0 || selectedYears.includes(txDate.getFullYear());
+                    const matchMonth = deferredMonths.length === 0 || deferredMonths.includes(txDate.getMonth());
+                    const matchYear = deferredYears.length === 0 || deferredYears.includes(txDate.getFullYear());
                     return matchMonth && matchYear;
                 } catch(e) {
                     return false;
@@ -54,9 +59,11 @@ export const BudgetBarChart = () => {
         let totalBudget = 0;
         let totalSpent = 0;
         
-        const details = categories.map((cat: Category) => {
-            const catBudget = budgets[cat.name] || 0;
-            const catSpent = expenseByCat[cat.name] || 0;
+        const details = categories
+            .filter((cat: Category) => (cat.type || 'expense') === txType)
+            .map((cat: Category) => {
+            const catBudget = Number(cat.budget) || 0;
+            const catSpent = amountByCat[cat.name] || 0;
             totalBudget += catBudget;
             totalSpent += catSpent;
             
@@ -80,7 +87,7 @@ export const BudgetBarChart = () => {
             executionPercentage: percentage,
             chartData: details
         };
-    }, [transactions, budgets, categories, selectedMonths, selectedYears]);
+    }, [deferredTransactions, budgets, categories, deferredMonths, deferredYears, txType]);
 
     if (!isMounted) return <div className="h-[400px] w-full bg-[var(--theme-glass)] animate-pulse rounded-3xl" />;
     
@@ -122,7 +129,21 @@ export const BudgetBarChart = () => {
 
     return (
         <div className="w-full flex flex-col space-y-6">
-            <div className="flex justify-end">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
+                <div className="flex gap-2 p-1 bg-white/[0.03] border border-white/[0.08] rounded-xl backdrop-blur-md">
+                    <button 
+                        onClick={() => setTxType('expense')}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${txType === 'expense' ? 'bg-rose-500/20 text-rose-400' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        Egresos
+                    </button>
+                    <button 
+                        onClick={() => setTxType('income')}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${txType === 'income' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        Ingresos
+                    </button>
+                </div>
                 <ChartTimeSelector 
                     selectedMonths={selectedMonths} 
                     selectedYears={selectedYears} 
@@ -132,29 +153,29 @@ export const BudgetBarChart = () => {
             </div>
 
             {/* SUMMARY WIDGET */}
-            <div className={`p-6 rounded-[2rem] border relative overflow-hidden transition-all duration-500 ${isOverBudget ? 'bg-rose-500/5 border-rose-500/20' : 'bg-blue-500/5 border-blue-500/20'}`}>
-                {isOverBudget && (
+            <div className={`p-6 rounded-[2rem] border relative overflow-hidden transition-all duration-500 ${txType === 'expense' ? (isOverBudget ? 'bg-rose-500/5 border-rose-500/20' : 'bg-blue-500/5 border-blue-500/20') : (isOverBudget ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-orange-500/5 border-orange-500/20')}`}>
+                {(txType === 'expense' ? isOverBudget : !isOverBudget) && (
                     <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <AlertTriangle size={80} className="text-rose-500" />
+                        <AlertTriangle size={80} className={txType === 'expense' ? 'text-rose-500' : 'text-orange-500'} />
                     </div>
                 )}
                 
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--theme-text-muted)] mb-4 flex items-center gap-2">
-                    <Target size={14} className={isOverBudget ? 'text-rose-400' : 'text-blue-400'} />
+                    <Target size={14} className={txType === 'expense' ? (isOverBudget ? 'text-rose-400' : 'text-blue-400') : (isOverBudget ? 'text-emerald-400' : 'text-orange-400')} />
                     Balance Global
                 </h4>
                 
                 <div className="flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-end">
                     <div className="space-y-1 z-10">
-                        <p className="text-xs font-bold text-[var(--theme-text-muted)] uppercase tracking-widest">Lo que Gastaste</p>
-                        <p className={`text-3xl sm:text-4xl font-black tracking-tighter ${isOverBudget ? 'text-rose-500' : 'text-[var(--theme-text)]'}`}>
+                        <p className="text-xs font-bold text-[var(--theme-text-muted)] uppercase tracking-widest">{txType === 'expense' ? 'Lo que Gastaste' : 'Lo que Ingresaste'}</p>
+                        <p className={`text-3xl sm:text-4xl font-black tracking-tighter ${txType === 'expense' ? (isOverBudget ? 'text-rose-500' : 'text-[var(--theme-text)]') : (isOverBudget ? 'text-emerald-500' : 'text-[var(--theme-text)]')}`}>
                             {formatCurrency(globalSpent)}
                         </p>
                     </div>
                     
                     <div className="space-y-1 text-left sm:text-right z-10">
-                        <p className="text-xs font-bold text-[var(--theme-text-muted)] uppercase tracking-widest">Lo que Presupuestaste</p>
-                        <p className="text-xl sm:text-2xl font-black tracking-tighter text-blue-400">
+                        <p className="text-xs font-bold text-[var(--theme-text-muted)] uppercase tracking-widest">{txType === 'expense' ? 'Lo que Presupuestaste' : 'Tu Meta de Ingresos'}</p>
+                        <p className={`text-xl sm:text-2xl font-black tracking-tighter ${txType === 'expense' ? 'text-blue-400' : 'text-emerald-400'}`}>
                             {formatCurrency(globalBudget)}
                         </p>
                     </div>
@@ -166,13 +187,13 @@ export const BudgetBarChart = () => {
                         <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--theme-text-muted)]">
                             Ejecución del Presupuesto
                         </span>
-                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${isOverBudget ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'}`}>
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${txType === 'expense' ? (isOverBudget ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20') : (isOverBudget ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-orange-500/10 text-orange-500 border-orange-500/20')}`}>
                             {executionPercentage.toFixed(1)}%
                         </span>
                     </div>
                     <div className="h-3 w-full bg-white/[0.05] rounded-full overflow-hidden">
                         <div 
-                            className={`h-full rounded-full transition-all duration-1000 ${isOverBudget ? 'bg-rose-500' : 'bg-blue-500'}`}
+                            className={`h-full rounded-full transition-all duration-1000 ${txType === 'expense' ? (isOverBudget ? 'bg-rose-500' : 'bg-blue-500') : (isOverBudget ? 'bg-emerald-500' : 'bg-orange-500')}`}
                             style={{ width: `${Math.min(executionPercentage, 100)}%` }}
                         />
                     </div>
@@ -223,7 +244,7 @@ export const BudgetBarChart = () => {
                                 {chartData.map((entry, index) => (
                                     <Cell 
                                         key={`cell-${index}`} 
-                                        fill={entry.Real > entry.Presupuesto ? '#f43f5e' : '#3b82f6'} 
+                                        fill={txType === 'expense' ? (entry.Real > entry.Presupuesto ? '#f43f5e' : '#3b82f6') : (entry.Real >= entry.Presupuesto ? '#10b981' : '#f59e0b')} 
                                         fillOpacity={1}
                                     />
                                 ))}
@@ -236,12 +257,12 @@ export const BudgetBarChart = () => {
             {chartData.length > 0 && (
                 <div className="flex justify-center gap-6 pb-2">
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-1.5 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--theme-text-muted)] italic">En Rango</span>
+                        <div className={`w-3 h-1.5 rounded-full shadow-lg ${txType === 'expense' ? 'bg-blue-500' : 'bg-orange-500'}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--theme-text-muted)] italic">{txType === 'expense' ? 'En Rango' : 'Progreso'}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-3 h-1.5 bg-rose-500 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.3)]" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--theme-text-muted)] italic">Exceso</span>
+                        <div className={`w-3 h-1.5 rounded-full shadow-lg ${txType === 'expense' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--theme-text-muted)] italic">{txType === 'expense' ? 'Exceso' : 'Meta Cumplida'}</span>
                     </div>
                 </div>
             )}

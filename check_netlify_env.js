@@ -12,8 +12,9 @@ function fetchUrl(url) {
 
 async function run() {
   try {
-    console.log("Fetching index html...");
-    const html = await fetchUrl('https://personalesmisfinanzas.netlify.app/');
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    console.log(`Fetching index html from ${siteUrl}...`);
+    const html = await fetchUrl(`${siteUrl}/`);
     
     // Match scripts like "/_next/static/chunks/..."
     const regex = /src="(\/_next\/static\/chunks\/[^"]+)"/g;
@@ -26,7 +27,7 @@ async function run() {
     console.log(`Found ${scripts.length} scripts. Checking for supabase URLs...`);
     
     for (const script of scripts) {
-      const scriptUrl = 'https://personalesmisfinanzas.netlify.app' + script;
+      const scriptUrl = siteUrl + script;
       const content = await fetchUrl(scriptUrl);
       
       const matches = content.match(/https:\/\/[a-zA-Z0-9-]+\.supabase\.co/g);

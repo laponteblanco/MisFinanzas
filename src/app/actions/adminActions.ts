@@ -53,8 +53,10 @@ export async function getAdminStats() {
 
     const loggedInEmail = session.user.email?.toLowerCase();
     
+    const adminEmail = process.env.ADMIN_EMAIL || '';
+    
     // Si el usuario es el administrador principal por correo
-    if (loggedInEmail === 'luisaponteblanco@gmail.com') {
+    if (adminEmail && loggedInEmail === adminEmail.toLowerCase()) {
         if (!profile || profile.role !== 'admin') {
             console.log(`[getAdminStats] Detectado administrador principal ${loggedInEmail} con rol incorrecto o sin perfil. Auto-reparando...`);
             
@@ -63,7 +65,7 @@ export async function getAdminStats() {
                 await supabaseAdmin.from('profiles').insert({
                     id: session.user.id,
                     email: session.user.email,
-                    display_name: 'Luis Aponte Blanco',
+                    display_name: process.env.ADMIN_NAME || 'Administrador',
                     role: 'admin',
                     tour_completed: true,
                     subscription_status: 'active'

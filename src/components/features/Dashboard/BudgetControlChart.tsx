@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useDeferredValue } from 'react';
 import { 
     BarChart, 
     Bar, 
@@ -35,16 +35,20 @@ export const BudgetControlChart = () => {
         setIsMounted(true);
     }, []);
 
+    const deferredMonths = useDeferredValue(selectedMonths);
+    const deferredYears = useDeferredValue(selectedYears);
+    const deferredTransactions = useDeferredValue(transactions);
+
     // 📊 ESTRUCTURA DE DATOS ESPERADA (Fase de Transformación)
     const chartData = useMemo(() => {
         // Calcular gasto real por categoría según filtros
-        const expenseByCat = transactions
+        const expenseByCat = deferredTransactions
             .filter(t => {
                 if (t.type !== 'expense') return false;
                 try {
                     const txDate = parseLocalDate(t.date);
-                    const matchMonth = selectedMonths.length === 0 || selectedMonths.includes(txDate.getMonth());
-                    const matchYear = selectedYears.length === 0 || selectedYears.includes(txDate.getFullYear());
+                    const matchMonth = deferredMonths.length === 0 || deferredMonths.includes(txDate.getMonth());
+                    const matchYear = deferredYears.length === 0 || deferredYears.includes(txDate.getFullYear());
                     return matchMonth && matchYear;
                 } catch (e) {
                     return false;
@@ -67,7 +71,7 @@ export const BudgetControlChart = () => {
                 execution: budgetLimit > 0 ? (realSpent / budgetLimit) * 100 : (realSpent > 0 ? 100 : 0)
             };
         }).sort((a, b) => b.real - a.real); // De mayor gasto a menor gasto real
-    }, [transactions, categories, selectedMonths, selectedYears]);
+    }, [deferredTransactions, categories, deferredMonths, deferredYears]);
 
     if (!isMounted) return <div className="h-[400px] w-full bg-[var(--theme-glass)] animate-pulse rounded-[2.5rem]" />;
     if (chartData.length === 0) return null;

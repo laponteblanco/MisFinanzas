@@ -6,7 +6,8 @@ import {
     isWithinInterval,
 } from 'date-fns';
 import { useTransactions } from "@/store/useTransactions";
-import { useEffect, useState, useMemo } from "react";
+import { useSettings, Category } from "@/store/useSettings";
+import { useEffect, useState, useMemo, useDeferredValue } from "react";
 import { Tag } from "lucide-react";
 import { 
     Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -16,7 +17,7 @@ import { parseLocalDate } from "@/lib/utils";
 
 export const CategoryBudgetChart = () => {
     const transactions = useTransactions(state => state.transactions);
-    const budgets = useTransactions(state => state.budgets);
+    const categories = useSettings(state => state.categories);
     const [isMobile, setIsMobile] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
 
@@ -33,9 +34,11 @@ export const CategoryBudgetChart = () => {
     const now = new Date();
     const range = { start: startOfMonth(now), end: endOfMonth(now) };
 
+    const deferredTransactions = useDeferredValue(transactions);
+
     // 1. Procesar gastos por categoría del MES ACTUAL
     const expenseByCat = useMemo(() => {
-        return transactions
+        return deferredTransactions
             .filter(t => {
                 if (t.type !== 'expense') return false;
                 try {
@@ -49,13 +52,14 @@ export const CategoryBudgetChart = () => {
                 acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
                 return acc;
             }, {});
-    }, [transactions, range]);
+    }, [deferredTransactions, range]);
 
     // 2. Preparar datos y ORDENAR (Pareto: De Mayor a Menor Gasto)
-    const data = Object.keys(budgets)
+    const data = categories
+        .filter((cat: Category) => (cat.type || 'expense') === 'expense')
         .map(cat => {
-            const spent = expenseByCat[cat] || 0;
-            const budget = budgets[cat];
+            const spent = expenseByCat[cat.name] || 0;
+            const budget = Number(cat.budget) || 0;
             const percent = budget > 0 ? (spent / budget) * 100 : (spent > 0 ? 100 : 0);
             
             return {

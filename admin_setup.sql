@@ -69,11 +69,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 4. TRIGGER DE AUTOPROMOCIÓN ADMISTRADOR
 -- ----------------------------------------------------------------------------
--- Este trigger asegura que luisaponteblanco@gmail.com siempre sea admin
+-- Este trigger asegura que el admin configurado siempre mantenga su rol
 CREATE OR REPLACE FUNCTION public.handle_admin_promotion()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.email = 'luisaponteblanco@gmail.com' THEN
+    -- NOTA: Reemplazar 'tu_correo_admin@ejemplo.com' por tu correo real antes de ejecutar
+    IF NEW.email = 'tu_correo_admin@ejemplo.com' THEN
         NEW.role := 'admin';
     END IF;
     RETURN NEW;
@@ -85,9 +86,8 @@ CREATE TRIGGER tr_admin_promotion
     BEFORE INSERT OR UPDATE ON public.profiles
     FOR EACH ROW EXECUTE FUNCTION public.handle_admin_promotion();
 
--- Forzar el rol de admin ahora mismo si ya existe
-UPDATE public.profiles SET role = 'admin' WHERE email = 'luisaponteblanco@gmail.com';
-UPDATE public.profiles SET role = 'user' WHERE email = 'luisapoteblanco@gmail.com'; -- Limpiar error anterior
+-- Forzar el rol de admin ahora mismo si ya existe (reemplaza con tu correo)
+-- UPDATE public.profiles SET role = 'admin' WHERE email = 'tu_correo_admin@ejemplo.com';
 
 -- 5. SEGURIDAD RLS (ADMIN ONLY)
 -- ----------------------------------------------------------------------------

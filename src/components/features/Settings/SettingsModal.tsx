@@ -23,6 +23,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     const [tempDisplayName, setTempDisplayName] = useState(profile?.display_name || "");
     const [newEmoji, setNewEmoji] = useState("💰");
     const [newBudget, setNewBudget] = useState<string>("");
+    const [newType, setNewType] = useState<'income' | 'expense'>('expense');
     const [editingCategory, setEditingCategory] = useState<string | null>(null);
     const [editingResponsible, setEditingResponsible] = useState<string | null>(null);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -72,14 +73,15 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
         if (activeTab === 'categories') {
             const budgetVal = parseFloat(newBudget) || 0;
             if (editingCategory) {
-                await updateCategory(editingCategory, { name: newName.trim(), emoji: newEmoji, budget: budgetVal });
+                await updateCategory(editingCategory, { name: newName.trim(), emoji: newEmoji, budget: budgetVal, type: newType });
                 setEditingCategory(null);
             } else {
-                await addCategory(user.id, newName.trim(), newEmoji, budgetVal);
+                await addCategory(user.id, newName.trim(), newEmoji, budgetVal, newType);
             }
             setNewName("");
             setNewEmoji("💰");
             setNewBudget("");
+            setNewType('expense');
         } else {
             if (editingResponsible) {
                 await updateResponsible(editingResponsible, newName.trim());
@@ -99,6 +101,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             setNewName(item.name);
             setNewEmoji(item.emoji || "💰");
             setNewBudget(item.budget?.toString() || "");
+            setNewType(item.type || 'expense');
         } else {
             setEditingResponsible(item.id);
             setEditingCategory(null);
@@ -264,13 +267,23 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                     </div>
                                     <div className="flex gap-2 items-center w-full sm:w-auto shrink-0">
                                         {activeTab === 'categories' && (
-                                            <input
-                                                type="text"
-                                                value={formatNumberWithDots(newBudget)}
-                                                onChange={handleBudgetChange}
-                                                placeholder="$ Presupuesto"
-                                                className="flex-1 sm:flex-none w-full sm:w-32 min-w-0 bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 px-4 rounded-xl text-sm font-bold text-emerald-400 outline-none focus:border-emerald-500/30 transition-all placeholder:text-emerald-500/30"
-                                            />
+                                            <>
+                                                <select
+                                                    value={newType}
+                                                    onChange={(e) => setNewType(e.target.value as 'income' | 'expense')}
+                                                    className="w-full sm:w-28 min-w-0 bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 px-3 rounded-xl text-xs font-bold text-[var(--theme-text)] outline-none focus:border-blue-500/30 transition-all appearance-none"
+                                                >
+                                                    <option value="expense" className="bg-[#151515] text-[var(--theme-text)] py-2">Egreso</option>
+                                                    <option value="income" className="bg-[#151515] text-[var(--theme-text)] py-2">Ingreso</option>
+                                                </select>
+                                                <input
+                                                    type="text"
+                                                    value={formatNumberWithDots(newBudget)}
+                                                    onChange={handleBudgetChange}
+                                                    placeholder="$ Presupuesto"
+                                                    className="flex-1 sm:flex-none w-full sm:w-32 min-w-0 bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 px-4 rounded-xl text-sm font-bold text-emerald-400 outline-none focus:border-emerald-500/30 transition-all placeholder:text-emerald-500/30"
+                                                />
+                                            </>
                                         )}
                                         <button
                                             type="submit"
@@ -296,6 +309,9 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                         <div>
                                             <p className="text-xs font-bold text-[var(--theme-text)] tracking-tight">{c.name}</p>
                                             <div className="flex items-center gap-2 mt-0.5">
+                                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${c.type === 'income' ? 'text-blue-500 bg-blue-500/10 border-blue-500/10' : 'text-rose-500 bg-rose-500/10 border-rose-500/10'}`}>
+                                                    {c.type === 'income' ? 'Ingreso' : 'Egreso'}
+                                                </span>
                                                 <span className="text-[8px] text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/10">
                                                     Budget: ${(c.budget || 0).toLocaleString()}
                                                 </span>

@@ -2,6 +2,9 @@ import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
 import { parseLocalDate } from "@/lib/utils";
 
+// Cache TTL en milisegundos (30 segundos — más corto porque las transacciones cambian frecuentemente)
+const TX_CACHE_TTL = 30_000;
+
 export interface TransactionSplit {
     name: string;
     percentage: number;
@@ -38,11 +41,14 @@ interface TransactionState {
   transactionToEdit: Transaction | null;
   isFormOpen: boolean;
   currentUserId: string | null;
+  _lastFetchedAt: number | null;
+  _cachedUserId: string | null;
 
   
   // Actions
   setIsFormOpen: (open: boolean) => void;
-  fetchTransactions: (userId: string) => Promise<void>;
+  fetchTransactions: (userId: string, force?: boolean) => Promise<void>;
+  invalidateCache: () => void;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'user_id'>) => Promise<void>;
   editTransaction: (id: string, transaction: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
@@ -63,12 +69,32 @@ export const useTransactions = create<TransactionState>((set, get) => ({
   transactionToEdit: null,
   isFormOpen: false,
   currentUserId: null,
+  _lastFetchedAt: null,
+  _cachedUserId: null,
 
 
   setIsFormOpen: (open) => set({ isFormOpen: open }),
 
-  fetchTransactions: async (userId: string) => {
-    if (get().loading) return; // Evitar múltiples peticiones simultáneas
+  invalidateCache: () => {
+    set({ _lastFetchedAt: null });
+  },
+
+  fetchTransactions: async (userId: string, force = false) => {
+    const { _lastFetchedAt, _cachedUserId, loading } = get();
+    const now = Date.now();
+
+    // Si el caché es válido y no se fuerza, no ir a la base de datos
+    if (
+        !force &&
+        !loading &&
+        _lastFetchedAt &&
+        _cachedUserId === userId &&
+        (now - _lastFetchedAt) < TX_CACHE_TTL
+    ) {
+        return; // ✅ Cache HIT — ahorramos la llamada más pesada a Supabase
+    }
+
+    if (loading) return;
     set({ loading: true });
     
     try {
@@ -96,6 +122,8 @@ export const useTransactions = create<TransactionState>((set, get) => ({
         });
         set({ budgets: dynamicBudgets });
       }
+
+      set({ _lastFetchedAt: Date.now(), _cachedUserId: userId });
     } catch (err) {
       console.error("Error al cargar transacciones:", err);
     } finally {

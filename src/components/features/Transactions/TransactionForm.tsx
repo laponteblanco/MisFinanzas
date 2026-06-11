@@ -238,20 +238,26 @@ export const TransactionForm = ({ isOpen, onClose }: TransactionFormProps) => {
                                         onChange={(e) => setCategory(e.target.value)}
                                     >
                                         <option value="" disabled className="bg-[#050505] text-slate-600">Seleccionar...</option>
-                                        {categories.length > 0 ? (
-                                            categories.map(cat => (
+                                        {categories.filter(c => !c.type || c.type === type).length > 0 ? (
+                                            categories.filter(c => !c.type || c.type === type).map(cat => (
                                                 <option key={cat.id} value={cat.name} className="bg-[#151515] text-[var(--theme-text)] py-2">
                                                     {cat.emoji || '📦'} {cat.name}
                                                 </option>
                                             ))
                                         ) : (
                                             <>
-                                                <option value="Alimentación" className="bg-[#151515] text-[var(--theme-text)]">🍎 Alimentación</option>
-                                                <option value="Transporte" className="bg-[#151515] text-[var(--theme-text)]">🚗 Transporte</option>
-                                                <option value="Vivienda" className="bg-[#151515] text-[var(--theme-text)]">🏠 Vivienda</option>
-                                                <option value="Suscripciones" className="bg-[#151515] text-[var(--theme-text)]">💳 Suscripciones</option>
-                                                <option value="Servicios" className="bg-[#151515] text-[var(--theme-text)]">⚡ Servicios</option>
-                                                <option value="Otros" className="bg-[#151515] text-[var(--theme-text)]">📦 Otros</option>
+                                                {type === 'expense' ? (
+                                                    <>
+                                                        <option value="Alimentación" className="bg-[#151515] text-[var(--theme-text)]">🍎 Alimentación</option>
+                                                        <option value="Transporte" className="bg-[#151515] text-[var(--theme-text)]">🚗 Transporte</option>
+                                                        <option value="Vivienda" className="bg-[#151515] text-[var(--theme-text)]">🏠 Vivienda</option>
+                                                        <option value="Suscripciones" className="bg-[#151515] text-[var(--theme-text)]">💳 Suscripciones</option>
+                                                        <option value="Servicios" className="bg-[#151515] text-[var(--theme-text)]">⚡ Servicios</option>
+                                                        <option value="Otros" className="bg-[#151515] text-[var(--theme-text)]">📦 Otros</option>
+                                                    </>
+                                                ) : (
+                                                    <option value="Ingresos" className="bg-[#151515] text-[var(--theme-text)]">💰 Ingresos</option>
+                                                )}
                                             </>
                                         )}
                                     </select>

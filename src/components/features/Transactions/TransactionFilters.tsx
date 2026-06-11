@@ -82,7 +82,7 @@ export const TransactionFilters = () => {
             const dateStr = new Date().toISOString().split('T')[0];
             const filename = `Historial_Filtrado_${dateStr}`;
             
-            downloadExcel(normalizedData, filename);
+            await downloadExcel(normalizedData, filename);
         } catch (error: any) {
             console.error("Error exportando a Excel:", error);
             alert(`Error al generar el reporte: ${error.message || "Error desconocido"}`);

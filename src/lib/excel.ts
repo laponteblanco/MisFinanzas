@@ -1,24 +1,84 @@
 import * as XLSX from 'xlsx';
 
 /**
- * Utilidad de Exportación a Excel y CSV
+ * Utilidad de Exportación a Excel y CSV asíncrona
+ * Usa Web Workers para no bloquear la interfaz.
+ * 
  * @param data Arreglo de objetos normalizados para las columnas
  * @param filename Nombre del archivo sin extensión
+ * @returns Promesa que se resuelve cuando la descarga finaliza o inicia
  */
-export const downloadExcel = (data: any[], filename: string) => {
+export const downloadExcel = (data: any[], filename: string): Promise<void> => {
+    return new Promise((resolve) => {
+        try {
+            // Verificar si soportamos Workers y estamos en el cliente
+            if (typeof window !== 'undefined' && window.Worker) {
+                // Instanciar el Web Worker nativo de Next.js
+                const worker = new Worker(new URL('../workers/excel.worker.ts', import.meta.url));
+
+                worker.onmessage = (e) => {
+                    if (e.data.success) {
+                        // Crear un Blob a partir del ArrayBuffer
+                        const blob = new Blob([e.data.buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        // Crear enlace temporal para descargar
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = `${filename}.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        
+                        // Limpieza
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        worker.terminate();
+                        resolve();
+                    } else {
+                        console.warn("Worker error:", e.data.error);
+                        fallback(data, filename, worker);
+                        resolve();
+                    }
+                };
+
+                worker.onerror = (err) => {
+                    console.warn("Worker execution error:", err);
+                    fallback(data, filename, worker);
+                    resolve();
+                };
+
+                // Iniciar el procesamiento en segundo plano
+                worker.postMessage({ data });
+            } else {
+                // Fallback directo si no hay workers
+                fallbackDirect(data, filename);
+                resolve();
+            }
+        } catch (error) {
+            console.warn("Fallo general al crear worker:", error);
+            fallbackDirect(data, filename);
+            resolve();
+        }
+    });
+};
+
+const fallback = (data: any[], filename: string, worker: Worker) => {
+    worker.terminate();
+    fallbackDirect(data, filename);
+};
+
+const fallbackDirect = (data: any[], filename: string) => {
     try {
-        // 1. Intentar exportar a Excel usando XLSX (SheetJS)
+        // Intento bloqueante clásico
         const worksheet = XLSX.utils.json_to_sheet(data);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Balance");
-        
-        // Escribir y descargar
         XLSX.writeFile(workbook, `${filename}.xlsx`);
-    } catch (error) {
-        console.warn("Fallo la exportación a Excel, iniciando fallback a CSV:", error);
+    } catch (e) {
+        console.warn("Fallo exportación clásica, usando CSV", e);
         downloadCSVFallback(data, filename);
     }
-};
+}
 
 /**
  * Fallback a CSV en caso de que falle la librería o el entorno

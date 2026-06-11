@@ -149,7 +149,7 @@ export const ExportBalanceButton = () => {
             };
             const filename = `Balance_${selectedResponsible.replace(/\s+/g, '_')}_${periodLabels[selectedPeriod]}_${dateStr}`;
             
-            downloadExcel(normalizedData, filename);
+            await downloadExcel(normalizedData, filename);
 
         } catch (error: any) {
             console.error("Error detallado exportando a Excel:", {

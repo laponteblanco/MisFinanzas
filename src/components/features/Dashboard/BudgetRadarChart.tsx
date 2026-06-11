@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useDeferredValue } from "react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useTransactions } from "@/store/useTransactions";
 import { useSettings } from "@/store/useSettings";
@@ -14,13 +14,17 @@ export const BudgetRadarChart = () => {
     const [selectedMonths, setSelectedMonths] = useState<number[]>([new Date().getMonth()]);
     const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
 
+    const deferredMonths = useDeferredValue(selectedMonths);
+    const deferredYears = useDeferredValue(selectedYears);
+    const deferredTransactions = useDeferredValue(transactions);
+
     const radarData = useMemo(() => {
         // Obtenemos gastos
-        const expenses = transactions.filter(t => {
+        const expenses = deferredTransactions.filter(t => {
             if (t.type !== 'expense') return false;
             const date = parseLocalDate(t.date);
-            const matchMonth = selectedMonths.length === 0 || selectedMonths.includes(date.getMonth());
-            const matchYear = selectedYears.length === 0 || selectedYears.includes(date.getFullYear());
+            const matchMonth = deferredMonths.length === 0 || deferredMonths.includes(date.getMonth());
+            const matchYear = deferredYears.length === 0 || deferredYears.includes(date.getFullYear());
             return matchMonth && matchYear;
         });
         
@@ -43,7 +47,7 @@ export const BudgetRadarChart = () => {
 
         // Ordenamos por mayor gasto y tomamos el top 6 para no saturar el radar
         return data.sort((a, b) => b.gasto - a.gasto).slice(0, 6);
-    }, [transactions, budgets, selectedMonths, selectedYears]);
+    }, [deferredTransactions, budgets, deferredMonths, deferredYears]);
 
     if (radarData.length < 3) {
         return (
