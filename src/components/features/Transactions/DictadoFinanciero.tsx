@@ -50,13 +50,66 @@ function getSupportedMimeType(): string {
     return "";
 }
 
+function decodeAudioDataAsync(context: AudioContext, buffer: ArrayBuffer): Promise<AudioBuffer> {
+    return new Promise((resolve, reject) => {
+        let isResolved = false;
+        const safeResolve = (val: AudioBuffer) => {
+            if (!isResolved) {
+                isResolved = true;
+                resolve(val);
+            }
+        };
+        const safeReject = (err: any) => {
+            if (!isResolved) {
+                isResolved = true;
+                reject(err);
+            }
+        };
+        
+        try {
+            const res = context.decodeAudioData(buffer, safeResolve, safeReject);
+            if (res && typeof res.then === "function") {
+                res.then(safeResolve).catch(safeReject);
+            }
+        } catch (err) {
+            safeReject(err);
+        }
+    });
+}
+
 async function decodeAndResample(blob: Blob): Promise<Float32Array> {
     const buf = await blob.arrayBuffer();
-    const ctx = new AudioContext({ sampleRate: 16000 });
-    const decoded = await ctx.decodeAudioData(buf);
-    const pcm = decoded.getChannelData(0);
-    ctx.close();
-    return pcm;
+    
+    const AudioContextClass = typeof window !== "undefined" ? (window.AudioContext || (window as any).webkitAudioContext) : null;
+    const OfflineAudioContextClass = typeof window !== "undefined" ? (window.OfflineAudioContext || (window as any).webkitOfflineAudioContext) : null;
+    
+    if (!AudioContextClass || !OfflineAudioContextClass) {
+        throw new Error("AudioContext or OfflineAudioContext not supported in this browser");
+    }
+
+    // Decode audio data using a temporary native AudioContext
+    const tempCtx = new AudioContextClass();
+    let decoded: AudioBuffer;
+    try {
+        decoded = await decodeAudioDataAsync(tempCtx, buf);
+    } finally {
+        tempCtx.close();
+    }
+
+    // Resample to 16000Hz using OfflineAudioContext
+    const offlineCtx = new OfflineAudioContextClass(
+        1, // mono
+        Math.round(decoded.duration * 16000), // length
+        16000 // target sample rate
+    );
+
+    const source = offlineCtx.createBufferSource();
+    source.buffer = decoded;
+    source.connect(offlineCtx.destination);
+    source.start();
+
+    const renderedBuffer = await offlineCtx.startRendering();
+    return renderedBuffer.getChannelData(0);
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -100,8 +153,18 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
     const taskIdRef = useRef(0);
     const modelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const modeRef = useRef(mode);
+    const modelStateRef = useRef(modelState);
+    const isListeningRef = useRef(isListening);
+    const isProcessingRef = useRef(isProcessing);
+    const scheduleNextRecordRef = useRef<() => void>(() => {});
+
     useEffect(() => { stepRef.current = currentStep; }, [currentStep]);
     useEffect(() => { dataRef.current = data; }, [data]);
+    useEffect(() => { modeRef.current = mode; }, [mode]);
+    useEffect(() => { modelStateRef.current = modelState; }, [modelState]);
+    useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
+    useEffect(() => { isProcessingRef.current = isProcessing; }, [isProcessing]);
 
     // ─── TTS ─────────────────────────────────────────────────────────────────
 
@@ -273,7 +336,7 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
     }, []);
 
     const startWhisperRecord = useCallback(async () => {
-        if (isProcessing || modelState !== "ready") return;
+        if (isProcessingRef.current || modelStateRef.current !== "ready") return;
         const stream = await acquireStream();
         if (!stream) return;
 
@@ -296,18 +359,20 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
                 if (float32.length < 1600) {
                     setIsProcessing(false);
                     setStatusMsg("Muy corto. Habla un poco más.");
-                    if (shouldAutoRef.current) scheduleNextRecord();
+                    if (shouldAutoRef.current) scheduleNextRecordRef.current();
                     return;
                 }
                 const taskId = ++taskIdRef.current;
                 workerRef.current?.postMessage({ type: "transcribe", audioData: float32, taskId }, [float32.buffer]);
-            } catch {
+            } catch (err) {
+                console.error("Error decoding audio:", err);
                 setIsProcessing(false);
-                if (shouldAutoRef.current) scheduleNextRecord();
+                setStatusMsg("Error de audio. Intenta de nuevo.");
+                if (shouldAutoRef.current) scheduleNextRecordRef.current();
             }
         };
 
-        recorder.start(250);
+        recorder.start(); // start recording without timeslice to prevent chunk corruption on iOS/Safari
         setIsListening(true);
         setStatusMsg("Escuchando… habla ahora");
         setTimeout(() => {
@@ -316,7 +381,7 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
                 setIsListening(false);
             }
         }, 7000);
-    }, [acquireStream, isProcessing, modelState]);
+    }, [acquireStream]);
 
     const stopWhisperRecord = useCallback(() => {
         if (recorderRef.current?.state === "recording") recorderRef.current.stop();
@@ -326,11 +391,15 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
     const scheduleNextRecord = useCallback(() => {
         if (!shouldAutoRef.current || stepRef.current === "FINALIZADO") return;
         setTimeout(() => {
-            if (shouldAutoRef.current && !isSpeakingRef.current && mode === "whisper") {
+            if (shouldAutoRef.current && !isSpeakingRef.current && modeRef.current === "whisper") {
                 startWhisperRecord();
             }
         }, 600);
-    }, [startWhisperRecord, mode]);
+    }, [startWhisperRecord]);
+
+    useEffect(() => {
+        scheduleNextRecordRef.current = scheduleNextRecord;
+    }, [scheduleNextRecord]);
 
     // ─── Manual text submit (fallback) ────────────────────────────────────────
 
@@ -373,7 +442,10 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
         if (mode === "speech-api" && modelState === "ready" && !isListening && !isSpeakingRef.current) {
             // Speech API starts on button tap, not auto
         }
-    }, [mode, modelState, isOpen]);
+        if (mode === "whisper" && modelState === "ready" && !isListening && !isSpeakingRef.current) {
+            startWhisperRecord();
+        }
+    }, [mode, modelState, isOpen, isListening, startWhisperRecord]);
 
     useEffect(() => () => {
         shouldAutoRef.current = false;
@@ -518,14 +590,15 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
 
     const triggerRecord = useCallback(() => {
         if (!shouldAutoRef.current || stepRef.current === "FINALIZADO") return;
-        if (mode === "speech-api") {
+        const currentMode = modeRef.current;
+        if (currentMode === "speech-api") {
             setTimeout(() => {
                 if (shouldAutoRef.current && !isSpeakingRef.current) startSpeechAPI();
             }, 400);
-        } else if (mode === "whisper") {
+        } else if (currentMode === "whisper") {
             scheduleNextRecord();
         }
-    }, [mode, startSpeechAPI, scheduleNextRecord]);
+    }, [startSpeechAPI, scheduleNextRecord]);
 
     const determineNextStep = useCallback((cur: typeof data, updated: boolean) => {
         const missing: Step[] = [];
