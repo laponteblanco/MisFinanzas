@@ -132,6 +132,9 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
     const [permissionDenied, setPermissionDenied] = useState(false);
     const [statusMsg, setStatusMsg] = useState("Iniciando…");
     const [manualText, setManualText] = useState("");
+    const [hasStarted, setHasStarted] = useState(false);
+    const hasStartedRef = useRef(false);
+    useEffect(() => { hasStartedRef.current = hasStarted; }, [hasStarted]);
 
     // ── Transaction data ──
     const [data, setData] = useState({
@@ -416,18 +419,19 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
     useEffect(() => {
         if (isOpen) {
             shouldAutoRef.current = true;
+            setHasStarted(false);
+            hasStartedRef.current = false;
             setCurrentStep("TIPO");
             setTranscript("");
             setPermissionDenied(false);
             setManualText("");
             setData({ tipo: "", monto: 0, descripcion: "", categoria: "", responsibles: [], fecha: new Date().toISOString().split("T")[0] });
             detectMode();
-            speak("Hola. ¿Este registro es un ingreso o un egreso?", () => {
-                if (!shouldAutoRef.current) return;
-                if (mode === "speech-api") startSpeechAPI();
-            });
+            setStatusMsg("Toca el micrófono para iniciar");
         } else {
             shouldAutoRef.current = false;
+            setHasStarted(false);
+            hasStartedRef.current = false;
             window.speechSynthesis?.cancel();
             stopSpeechAPI();
             stopWhisperRecord();
@@ -442,10 +446,10 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
         if (mode === "speech-api" && modelState === "ready" && !isListening && !isSpeakingRef.current) {
             // Speech API starts on button tap, not auto
         }
-        if (mode === "whisper" && modelState === "ready" && !isListening && !isSpeakingRef.current) {
+        if (mode === "whisper" && modelState === "ready" && !isListening && !isSpeakingRef.current && hasStarted) {
             startWhisperRecord();
         }
-    }, [mode, modelState, isOpen, isListening, startWhisperRecord]);
+    }, [mode, modelState, isOpen, isListening, startWhisperRecord, hasStarted]);
 
     useEffect(() => () => {
         shouldAutoRef.current = false;
@@ -642,6 +646,39 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
 
     const handleMicButton = async () => {
         if (isProcessing) return;
+
+        // Synchronously unlock audio context and SpeechSynthesis on first tap (iOS Safari requirement)
+        if (!hasStartedRef.current) {
+            setHasStarted(true);
+            hasStartedRef.current = true;
+
+            // 1. Unlock TTS engine
+            if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                try {
+                    const silent = new SpeechSynthesisUtterance("");
+                    silent.volume = 0;
+                    window.speechSynthesis.speak(silent);
+                } catch (e) {
+                    console.error("TTS unlock error:", e);
+                }
+            }
+
+            // 2. Pre-acquire the microphone stream (prompts permission synchronously)
+            const stream = await acquireStream();
+            if (!stream) {
+                // permission denied or error, reset
+                setHasStarted(false);
+                hasStartedRef.current = false;
+                return;
+            }
+
+            // 3. Welcome greeting and trigger automatic recording flow
+            speak("Hola. ¿Este registro es un ingreso o un egreso?", () => {
+                triggerRecord();
+            });
+            return;
+        }
+
         if (mode === "speech-api") {
             isListening ? stopSpeechAPI() : startSpeechAPI();
         } else if (mode === "whisper") {
