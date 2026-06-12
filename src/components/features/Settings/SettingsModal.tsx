@@ -189,8 +189,10 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
 
                     {/* Formulario de Adición - Oculto en Soporte y Cuenta */}
                     {(activeTab !== 'soporte' && activeTab !== 'account') && (
-                        <form onSubmit={handleAdd} className="p-8 border-b border-[var(--theme-border)] bg-white/[0.01]">
-                            <div className="flex flex-row gap-2 sm:gap-3 w-full">
+                        <form onSubmit={handleAdd} className="p-5 md:p-8 border-b border-[var(--theme-border)] bg-white/[0.01] space-y-2">
+
+                            {/* Fila 1: Emoji (solo categorías) + Nombre */}
+                            <div className="flex gap-2">
                                 {activeTab === 'categories' && (
                                     <div className="relative shrink-0">
                                         <button
@@ -223,17 +225,14 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                                 </div>
                                                 <div className="border-t border-[var(--theme-border)] pt-3 flex flex-col gap-2">
                                                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 px-1">O pega el tuyo</p>
-                                                    <input 
-                                                        type="text" 
+                                                    <input
+                                                        type="text"
                                                         placeholder="Copia/pega cualquier emoji..."
                                                         className="w-full bg-white/[0.03] border border-[var(--theme-border)] rounded-xl h-10 px-3 text-sm outline-none focus:border-blue-500/30 text-center"
                                                         maxLength={2}
                                                         onChange={(e) => {
                                                             const val = e.target.value;
-                                                            if (val) {
-                                                                setNewEmoji(val);
-                                                                setShowEmojiPicker(false);
-                                                            }
+                                                            if (val) { setNewEmoji(val); setShowEmojiPicker(false); }
                                                         }}
                                                     />
                                                 </div>
@@ -241,59 +240,65 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                         )}
                                     </div>
                                 )}
-                                <div className="flex-1 flex flex-col sm:flex-row gap-2 sm:gap-3 min-w-0">
-                                    <div className="flex-1 min-w-0 relative flex items-center">
-                                        <input
-                                            type="text"
-                                            value={newName}
-                                            onChange={(e) => setNewName(e.target.value)}
-                                            placeholder={editingCategory ? "Nombre de categoría..." : activeTab === 'categories' ? "Añadir categoría..." : "Añadir responsable..."}
-                                            className="w-full min-w-0 bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 px-4 pr-10 rounded-xl text-sm font-bold text-[var(--theme-text)] outline-none focus:border-blue-500/30 transition-all"
-                                        />
-                                        {editingCategory && (
-                                            <button
-                                                type="button"
-                                                onClick={() => { 
-                                                    setEditingCategory(null); 
-                                                    setEditingResponsible(null); 
-                                                    setNewName(""); 
-                                                    setNewBudget(""); 
-                                                }}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[var(--theme-text)] p-1"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="flex gap-2 items-center w-full sm:w-auto shrink-0">
-                                        {activeTab === 'categories' && (
-                                            <>
-                                                <select
-                                                    value={newType}
-                                                    onChange={(e) => setNewType(e.target.value as 'income' | 'expense')}
-                                                    className="w-full sm:w-28 min-w-0 bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 px-3 rounded-xl text-xs font-bold text-[var(--theme-text)] outline-none focus:border-blue-500/30 transition-all appearance-none"
-                                                >
-                                                    <option value="expense" className="bg-[#151515] text-[var(--theme-text)] py-2">Egreso</option>
-                                                    <option value="income" className="bg-[#151515] text-[var(--theme-text)] py-2">Ingreso</option>
-                                                </select>
-                                                <input
-                                                    type="text"
-                                                    value={formatNumberWithDots(newBudget)}
-                                                    onChange={handleBudgetChange}
-                                                    placeholder="$ Presupuesto"
-                                                    className="flex-1 sm:flex-none w-full sm:w-32 min-w-0 bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 px-4 rounded-xl text-sm font-bold text-emerald-400 outline-none focus:border-emerald-500/30 transition-all placeholder:text-emerald-500/30"
-                                                />
-                                            </>
-                                        )}
+
+                                {/* Nombre */}
+                                <div className="flex-1 relative flex items-center">
+                                    <input
+                                        type="text"
+                                        value={newName}
+                                        onChange={(e) => setNewName(e.target.value)}
+                                        placeholder={editingCategory ? "Nombre de categoría..." : activeTab === 'categories' ? "Nombre de categoría..." : "Nombre de responsable..."}
+                                        className="w-full bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 px-4 pr-10 rounded-xl text-sm font-bold text-[var(--theme-text)] outline-none focus:border-blue-500/30 transition-all"
+                                    />
+                                    {(editingCategory || editingResponsible) && (
                                         <button
-                                            type="submit"
-                                            className={`px-5 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl h-12 min-w-[60px] shrink-0 ${(editingCategory || editingResponsible) ? 'bg-emerald-500 text-[var(--theme-text)]' : 'bg-white text-black hover:bg-blue-600 hover:text-[var(--theme-text)]'}`}
+                                            type="button"
+                                            onClick={() => { setEditingCategory(null); setEditingResponsible(null); setNewName(""); setNewBudget(""); }}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[var(--theme-text)] p-1"
                                         >
-                                            {(editingCategory || editingResponsible) ? <Check size={18} /> : <Plus size={18} />}
+                                            <X size={14} />
                                         </button>
-                                    </div>
+                                    )}
                                 </div>
+
+                                {/* Botón submit (solo responsables, ya que categorías tiene segunda fila) */}
+                                {activeTab === 'responsibles' && (
+                                    <button
+                                        type="submit"
+                                        className={`px-4 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl h-12 min-w-[48px] shrink-0 ${editingResponsible ? 'bg-emerald-500 text-white' : 'bg-white text-black hover:bg-blue-600 hover:text-white'}`}
+                                    >
+                                        {editingResponsible ? <Check size={18} /> : <Plus size={18} />}
+                                    </button>
+                                )}
                             </div>
+
+                            {/* Fila 2 (solo categorías): Tipo + Presupuesto + Botón */}
+                            {activeTab === 'categories' && (
+                                <div className="flex gap-2 items-center">
+                                    <select
+                                        value={newType}
+                                        onChange={(e) => setNewType(e.target.value as 'income' | 'expense')}
+                                        className="w-28 shrink-0 bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 px-3 rounded-xl text-xs font-bold text-[var(--theme-text)] outline-none focus:border-blue-500/30 transition-all appearance-none"
+                                    >
+                                        <option value="expense" className="bg-[#151515]">Egreso</option>
+                                        <option value="income" className="bg-[#151515]">Ingreso</option>
+                                    </select>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={formatNumberWithDots(newBudget)}
+                                        onChange={handleBudgetChange}
+                                        placeholder="$ Presupuesto mensual"
+                                        className="flex-1 min-w-0 bg-[var(--theme-glass)] border border-[var(--theme-border)] h-12 px-4 rounded-xl text-sm font-bold text-emerald-400 outline-none focus:border-emerald-500/30 transition-all placeholder:text-emerald-500/30"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className={`px-4 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl h-12 min-w-[48px] shrink-0 ${editingCategory ? 'bg-emerald-500 text-white' : 'bg-white text-black hover:bg-blue-600 hover:text-white'}`}
+                                    >
+                                        {editingCategory ? <Check size={18} /> : <Plus size={18} />}
+                                    </button>
+                                </div>
+                            )}
                         </form>
                     )}
 

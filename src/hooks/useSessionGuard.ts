@@ -126,10 +126,38 @@ export const useSessionGuard = () => {
 };
 
 /**
+ * Genera un UUID v4 compatible con HTTP y HTTPS.
+ * crypto.randomUUID() solo funciona en contextos seguros (HTTPS).
+ * En HTTP (desarrollo en red local), usa crypto.getRandomValues() o Math.random().
+ */
+function generateUUID(): string {
+    // Opción 1: API nativa (HTTPS)
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    // Opción 2: getRandomValues (HTTP también lo soporta)
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+        const arr = new Uint8Array(16);
+        crypto.getRandomValues(arr);
+        arr[6] = (arr[6] & 0x0f) | 0x40; // versión 4
+        arr[8] = (arr[8] & 0x3f) | 0x80; // variante RFC 4122
+        return [...arr].map((b, i) =>
+            ([4, 6, 8, 10].includes(i) ? '-' : '') +
+            b.toString(16).padStart(2, '0')
+        ).join('');
+    }
+    // Opción 3: fallback con Math.random
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+}
+
+/**
  * Registra un nuevo token de sesión en la tabla profiles.
  */
 export const registerSessionToken = async (userId: string): Promise<string> => {
-    const newToken = crypto.randomUUID();
+    const newToken = generateUUID();
     
     // Guardar en la DB
     const { error } = await supabase
