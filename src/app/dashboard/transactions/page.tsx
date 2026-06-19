@@ -119,17 +119,15 @@ export default function TransactionsPage() {
 }
 
 function TransactionsContent() {
-    const { 
-        filteredTransactions,
-        deleteTransaction,
-        setTransactionToEdit,
-        setIsFormOpen,
-        loading,
-        filters,
-        setFilters,
-        fetchTransactions
-    } = useTransactions();
-    const { fetchSettings } = useSettings();
+    const filteredTransactions = useTransactions(s => s.filteredTransactions);
+    const deleteTransaction = useTransactions(s => s.deleteTransaction);
+    const setTransactionToEdit = useTransactions(s => s.setTransactionToEdit);
+    const setIsFormOpen = useTransactions(s => s.setIsFormOpen);
+    const loading = useTransactions(s => s.loading);
+    const filters = useTransactions(s => s.filters);
+    const setFilters = useTransactions(s => s.setFilters);
+    const fetchTransactions = useTransactions(s => s.fetchTransactions);
+    const fetchSettings = useSettings(s => s.fetchSettings);
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const [limit, setLimit] = useState(50);

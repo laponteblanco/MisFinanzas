@@ -4,9 +4,21 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+function NavigationGuard() {
   const pathname = usePathname();
 
+  // Reset de estados en navegación (sin manipular opacity)
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.body.style.pointerEvents = "auto";
+      document.body.style.overflow = "auto";
+    }
+  }, [pathname]);
+
+  return null;
+}
+
+export function Providers({ children }: { children: React.ReactNode }) {
   // Ocultar el pre-loader nativo cuando React se hidrata
   useEffect(() => {
     const preloader = document.getElementById('app-preloader');
@@ -20,16 +32,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     document.body.style.overflow = "auto";
   }, []);
 
-  // Reset de estados en navegación (sin manipular opacity)
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.body.style.pointerEvents = "auto";
-      document.body.style.overflow = "auto";
-    }
-  }, [pathname]);
-
   return (
     <AuthProvider>
+      <NavigationGuard />
       {children}
     </AuthProvider>
   );

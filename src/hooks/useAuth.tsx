@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { clearSessionToken } from "@/hooks/useSessionGuard";
@@ -51,15 +51,19 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const isInitialMount = useRef(true);
+
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             const currentUser = session?.user || null;
             setUser(currentUser);
             if (currentUser) fetchProfile(currentUser.id);
             setLoading(false);
+            isInitialMount.current = false;
         });
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'INITIAL_SESSION' || isInitialMount.current) return;
             const currentUser = session?.user || null;
             setUser(currentUser);
             if (currentUser) fetchProfile(currentUser.id);
@@ -70,13 +74,13 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => subscription.unsubscribe();
     }, []);
 
-    const signOut = async () => {
+    const signOut = useCallback(async () => {
         clearSessionToken(); // Limpiar token de sesión única
         await supabase.auth.signOut();
         window.location.href = '/login';
-    };
+    }, []);
 
-    const updateProfile = async (updates: Partial<UserProfile>) => {
+    const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
         if (!user) return { success: false, error: 'Sin sesión' };
         try {
             const { error } = await supabase
@@ -85,7 +89,8 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 .eq('id', user.id);
 
             if (!error) {
-                await fetchProfile(user.id);
+                setProfile(prev => prev ? { ...prev, ...updates } : null);
+                fetchProfile(user.id);
                 return { success: true };
             }
             return { success: false, error };
@@ -93,10 +98,14 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.error("Error al actualizar perfil:", err);
             return { success: false, error: err };
         }
-    };
+    }, [user]);
+
+    const contextValue = useMemo(() => ({
+        user, profile, loading, signOut, updateProfile
+    }), [user, profile, loading, signOut, updateProfile]);
 
     return (
-        <AuthContext.Provider value={{ user, profile, loading, signOut, updateProfile }}>
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );

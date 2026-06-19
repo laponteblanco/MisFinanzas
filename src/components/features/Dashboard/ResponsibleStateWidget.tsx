@@ -116,28 +116,31 @@ export const ResponsibleStateWidget = () => {
 
     // Cálculo masivo de estadísticas para todos los responsables
     const allStats = useMemo(() => {
-        return responsibles.map(r => {
-            let income = 0;
-            let expense = 0;
-
-            filteredTransactions.forEach(tx => {
-                const respMatch = tx.responsibles?.find(match => match.name === r.name);
-                
-                if (respMatch) {
-                    const effectiveAmount = Number(tx.amount) * (respMatch.percentage / 100);
-                    if (tx.type === 'income') income += effectiveAmount;
-                    else expense += effectiveAmount;
+        const statMap = new Map<string, { income: number; expense: number }>();
+        responsibles.forEach(r => statMap.set(r.name, { income: 0, expense: 0 }));
+        
+        filteredTransactions.forEach(tx => {
+            if (!tx.responsibles) return;
+            tx.responsibles.forEach(match => {
+                const entry = statMap.get(match.name);
+                if (entry) {
+                    const effectiveAmount = Number(tx.amount) * (match.percentage / 100);
+                    if (tx.type === 'income') entry.income += effectiveAmount;
+                    else entry.expense += effectiveAmount;
                 }
             });
+        });
 
+        return responsibles.map(r => {
+            const stats = statMap.get(r.name) || { income: 0, expense: 0 };
             return {
                 id: r.id,
                 name: r.name,
-                income,
-                expense,
-                balance: income - expense
+                income: stats.income,
+                expense: stats.expense,
+                balance: stats.income - stats.expense
             };
-        }).sort((a, b) => b.balance - a.balance); // Ordenar por desempeño financiero
+        }).sort((a, b) => b.balance - a.balance);
     }, [responsibles, filteredTransactions]);
 
     return (

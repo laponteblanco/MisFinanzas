@@ -25,8 +25,12 @@ import { ModuleBook } from "@/components/features/Dashboard/ModuleBook";
 
 export default function DashboardPage() {
     const { profile, user } = useAuth();
-    const { transactions, setIsFormOpen, fetchTransactions } = useTransactions();
-    const { responsibles: availableResponsibles, categories, fetchSettings } = useSettings();
+    const transactions = useTransactions(s => s.transactions);
+    const setIsFormOpen = useTransactions(s => s.setIsFormOpen);
+    const fetchTransactions = useTransactions(s => s.fetchTransactions);
+    const availableResponsibles = useSettings(s => s.responsibles);
+    const categories = useSettings(s => s.categories);
+    const fetchSettings = useSettings(s => s.fetchSettings);
 
     // Sincronización inicial de datos maestros para activar gráficos
     useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Calendar, Tag, Users, Check, AlertCircle, Plus } from "lucide-react";
+import { X, Calendar, Tag, Users, Check, AlertCircle, Plus, Mic } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useLicense } from "@/hooks/useLicense";
@@ -13,9 +13,10 @@ import confetti from "canvas-confetti";
 interface TransactionFormProps {
     isOpen: boolean;
     onClose: () => void;
+    onVoiceClick?: () => void;
 }
 
-export const TransactionForm = ({ isOpen, onClose }: TransactionFormProps) => {
+export const TransactionForm = ({ isOpen, onClose, onVoiceClick }: TransactionFormProps) => {
     const { user, profile } = useAuth();
     const { has_active_access } = useLicense();
     const addTransaction = useTransactions(state => state.addTransaction);
@@ -153,9 +154,22 @@ export const TransactionForm = ({ isOpen, onClose }: TransactionFormProps) => {
             <div className="bg-[var(--theme-surface)] border border-[var(--theme-border)] w-full max-w-lg rounded-[2.5rem] max-h-[90vh] overflow-y-auto shadow-2xl transition-all duration-500 animate-in fade-in zoom-in-95 custom-scrollbar">
                 <div className="p-8">
                     <div className="flex justify-between items-center mb-10">
-                        <h3 className="text-xl font-black tracking-tight text-[var(--theme-text)]">
-                            {transactionToEdit ? "Editar Movimiento" : "Nuevo Movimiento"}
-                        </h3>
+                        <div className="flex items-center gap-3">
+                            <h3 className="text-xl font-black tracking-tight text-[var(--theme-text)]">
+                                {transactionToEdit ? "Editar Movimiento" : "Nuevo Movimiento"}
+                            </h3>
+                            {!transactionToEdit && onVoiceClick && (
+                                <button
+                                    type="button"
+                                    onClick={onVoiceClick}
+                                    className="p-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 hover:text-blue-300 rounded-2xl border border-blue-500/20 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                                    title="Dictar por voz"
+                                >
+                                    <Mic size={14} className="animate-pulse" />
+                                    <span className="text-[10px] font-black uppercase tracking-wider">Dictar</span>
+                                </button>
+                            )}
+                        </div>
                         <button onClick={onClose} className="p-2 hover:bg-[var(--theme-glass)] rounded-full text-slate-500 transition-colors">
                             <X size={20} />
                         </button>

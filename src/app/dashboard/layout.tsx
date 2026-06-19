@@ -27,7 +27,8 @@ import {
     History,
     ShieldCheck,
     Target,
-    HelpCircle
+    HelpCircle,
+    Mic
 } from "lucide-react";
 
 export default function DashboardLayout({
@@ -48,7 +49,10 @@ export default function DashboardLayout({
     const [isDictationOpen, setIsDictationOpen] = useState(false);
     const displayName = profile?.display_name || "Usuario";
 
-    const { isFormOpen, setIsFormOpen, fetchTransactions, transactions } = useTransactions();
+    const isFormOpen = useTransactions(s => s.isFormOpen);
+    const setIsFormOpen = useTransactions(s => s.setIsFormOpen);
+    const fetchTransactions = useTransactions(s => s.fetchTransactions);
+    const transactions = useTransactions(s => s.transactions);
     const router = useRouter();
 
     // Sincronización: Cerrar modales al navegar
@@ -72,6 +76,38 @@ export default function DashboardLayout({
             router.push("/login");
         }
     }, [authLoading, user, router]);
+
+    const handleVoiceClick = async () => {
+        if (plan_name === 'Free' && transactions.length >= 50) return;
+        
+        // 1. Unlock TTS engine synchronously
+        if (typeof window !== "undefined" && "speechSynthesis" in window) {
+            try {
+                const silent = new SpeechSynthesisUtterance("");
+                silent.volume = 0;
+                window.speechSynthesis.speak(silent);
+            } catch (e) {
+                console.error("TTS unlock error:", e);
+            }
+        }
+        
+        // 2. Pre-acquire the microphone stream synchronously
+        try {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000, channelCount: 1 }
+                });
+                (window as any).preAcquiredVoiceStream = stream;
+            } else {
+                console.warn("navigator.mediaDevices.getUserMedia is not available in layout");
+            }
+        } catch (e) {
+            console.error("Mic pre-acquire error:", e);
+        }
+
+        // 3. Open the dictation modal
+        setIsDictationOpen(true);
+    };
 
     if (authLoading || (user && !isInitialized && !isAdmin)) {
         return <DashboardSkeleton />;
@@ -175,10 +211,19 @@ export default function DashboardLayout({
                 disabled={plan_name === 'Free' && transactions.length >= 50}
                 hidden={!has_active_access && !isAdmin}
                 isDictating={isDictationOpen}
-                title={plan_name === 'Free' && transactions.length >= 50 ? "Límite de plan alcanzado" : "Nuevo Movimiento (Mantén presionado para dictado por voz)"}
+                title={plan_name === 'Free' && transactions.length >= 50 ? "Límite de plan alcanzado" : "Nuevo Movimiento (Sostén para dictado por voz)"}
             />
 
-            {isFormOpen && <TransactionForm isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} />}
+            {isFormOpen && (
+                <TransactionForm 
+                    isOpen={isFormOpen} 
+                    onClose={() => setIsFormOpen(false)} 
+                    onVoiceClick={() => {
+                        setIsFormOpen(false);
+                        handleVoiceClick();
+                    }}
+                />
+            )}
             {isSettingsOpen && <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />}
             {isAdminOpen && <AdminPanel isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />}
             {isDictationOpen && <DictadoFinanciero isOpen={isDictationOpen} onClose={() => setIsDictationOpen(false)} />}

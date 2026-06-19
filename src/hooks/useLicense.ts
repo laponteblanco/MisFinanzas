@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -29,8 +29,12 @@ export const useLicense = () => {
 
     const [isInitialized, setIsInitialized] = useState(false);
 
+    const isFetchingRef = useRef(false);
+
     const fetchLicenseStatus = useCallback(async () => {
-        if (!user?.id) return;
+        if (!user?.id || isFetchingRef.current) return;
+        
+        isFetchingRef.current = true;
 
         try {
             const { data, error } = await supabase
@@ -65,6 +69,8 @@ export const useLicense = () => {
             // FAIL-SAFE: En caso de error técnico, permitimos el acceso para no bloquear al usuario
             setStatus(prev => ({ ...prev, loading: false, has_active_access: true }));
             setIsInitialized(true);
+        } finally {
+            isFetchingRef.current = false;
         }
     }, [user?.id]);
 
@@ -73,9 +79,14 @@ export const useLicense = () => {
 
         fetchLicenseStatus();
 
-        // Generamos un sufijo único por montura para evitar conflictos de "already subscribed" en dev
-        const mountId = Math.random().toString(36).substring(7);
-        const channelName = `license-live-${user.id}-${mountId}`;
+        const channelName = `license-live-${user.id}`;
+        
+        // Limpiar canales previos con el mismo nombre (Strict Mode workaround)
+        supabase.getChannels().forEach(c => {
+            if (c.topic === `realtime:${channelName}`) {
+                supabase.removeChannel(c);
+            }
+        });
         
         const subscription = supabase
             .channel(channelName)

@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
 const SESSION_TOKEN_KEY = "mfp-session-token";
-const POLL_INTERVAL_MS = 10_000; // Verificar cada 10 segundos
+const POLL_INTERVAL_MS = 120_000; // Verificar cada 120 segundos (Fallback al Realtime)
 
 /**
  * useSessionGuard — Control de Sesión Única por Dispositivo (Actualizado a tabla profiles)

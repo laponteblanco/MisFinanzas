@@ -38,8 +38,7 @@ const isIOS = () =>
  *  En iOS es muy poco confiable — usamos Whisper para eso. */
 function canUseSpeechAPI(): boolean {
     if (typeof window === "undefined") return false;
-    const hasAPI = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-    return hasAPI && !isIOS();
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
 function getSupportedMimeType(): string {
@@ -161,6 +160,8 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
     const isListeningRef = useRef(isListening);
     const isProcessingRef = useRef(isProcessing);
     const scheduleNextRecordRef = useRef<() => void>(() => {});
+    const handleStepLogicRef = useRef<(text: string) => void>(() => {});
+    const hasGottenResultRef = useRef(false);
 
     useEffect(() => { stepRef.current = currentStep; }, [currentStep]);
     useEffect(() => { dataRef.current = data; }, [data]);
@@ -210,28 +211,44 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
         recognition.onresult = (e: any) => {
             const text = e.results[e.results.length - 1][0].transcript;
             if (text?.trim()) {
+                hasGottenResultRef.current = true;
                 setTranscript(text);
                 setIsListening(false);
                 setIsProcessing(true);
                 setTimeout(() => {
-                    handleStepLogic(text);
+                    handleStepLogicRef.current(text);
                     setIsProcessing(false);
                 }, 80);
             }
         };
 
         recognition.onerror = (e: any) => {
+            console.error("SpeechRecognition error:", e.error);
             if (e.error === "not-allowed") {
                 setPermissionDenied(true);
                 setStatusMsg("Permiso de micrófono denegado.");
-            } else if (e.error !== "no-speech") {
-                setStatusMsg("No te escuché. Toca el micrófono e intenta de nuevo.");
+            } else {
+                console.log("SpeechRecognition error, falling back to Whisper...");
+                setMode("whisper");
+                initWhisperWorker();
+                setTimeout(() => {
+                    startWhisperRecord();
+                }, 500);
             }
             setIsListening(false);
         };
 
         recognition.onend = () => {
             setIsListening(false);
+            // If the recognition session ended without any results, fallback to Whisper
+            if (!hasGottenResultRef.current) {
+                console.log("SpeechRecognition ended without result, falling back to Whisper...");
+                setMode("whisper");
+                initWhisperWorker();
+                setTimeout(() => {
+                    startWhisperRecord();
+                }, 500);
+            }
         };
 
         recognitionRef.current = recognition;
@@ -239,7 +256,19 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
 
     const startSpeechAPI = useCallback(() => {
         if (!recognitionRef.current) initSpeechAPI();
+        hasGottenResultRef.current = false;
         try {
+            // Release microphone hardware lock from pre-acquired streams
+            if (typeof window !== "undefined" && (window as any).preAcquiredVoiceStream) {
+                const stream = (window as any).preAcquiredVoiceStream;
+                stream.getTracks().forEach((t: any) => t.stop());
+                (window as any).preAcquiredVoiceStream = null;
+            }
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach((t) => t.stop());
+                streamRef.current = null;
+            }
+
             recognitionRef.current?.start();
             setIsListening(true);
             setStatusMsg("Escuchando… habla ahora");
@@ -296,7 +325,7 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
                     setIsProcessing(false);
                     if (msg.text?.trim()) {
                         setTranscript(msg.text);
-                        handleStepLogic(msg.text);
+                        handleStepLogicRef.current(msg.text);
                     } else {
                         setStatusMsg("No te escuché bien. Intenta de nuevo.");
                         if (shouldAutoRef.current) scheduleNextRecord();
@@ -324,13 +353,29 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
 
     const acquireStream = useCallback(async (): Promise<MediaStream | null> => {
         if (streamRef.current) return streamRef.current;
-        try {
-            const s = await navigator.mediaDevices.getUserMedia({
-                audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000, channelCount: 1 }
-            });
+
+        // Check if there is a pre-acquired stream from layout click
+        if (typeof window !== "undefined" && (window as any).preAcquiredVoiceStream) {
+            const s = (window as any).preAcquiredVoiceStream;
             streamRef.current = s;
+            (window as any).preAcquiredVoiceStream = null; // consume it
             setPermissionDenied(false);
             return s;
+        }
+
+        try {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const s = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000, channelCount: 1 }
+                });
+                streamRef.current = s;
+                setPermissionDenied(false);
+                return s;
+            } else {
+                setPermissionDenied(true);
+                setStatusMsg("El micrófono no está disponible en este navegador/contexto.");
+                return null;
+            }
         } catch {
             setPermissionDenied(true);
             setStatusMsg("Permiso de micrófono denegado.");
@@ -414,42 +459,7 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
         handleStepLogic(text);
     };
 
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
 
-    useEffect(() => {
-        if (isOpen) {
-            shouldAutoRef.current = true;
-            setHasStarted(false);
-            hasStartedRef.current = false;
-            setCurrentStep("TIPO");
-            setTranscript("");
-            setPermissionDenied(false);
-            setManualText("");
-            setData({ tipo: "", monto: 0, descripcion: "", categoria: "", responsibles: [], fecha: new Date().toISOString().split("T")[0] });
-            detectMode();
-            setStatusMsg("Toca el micrófono para iniciar");
-        } else {
-            shouldAutoRef.current = false;
-            setHasStarted(false);
-            hasStartedRef.current = false;
-            window.speechSynthesis?.cancel();
-            stopSpeechAPI();
-            stopWhisperRecord();
-            streamRef.current?.getTracks().forEach((t) => t.stop());
-            streamRef.current = null;
-        }
-    }, [isOpen]);
-
-    // Auto-start recording when mode is resolved and panel is open
-    useEffect(() => {
-        if (!isOpen || !shouldAutoRef.current) return;
-        if (mode === "speech-api" && modelState === "ready" && !isListening && !isSpeakingRef.current) {
-            // Speech API starts on button tap, not auto
-        }
-        if (mode === "whisper" && modelState === "ready" && !isListening && !isSpeakingRef.current && hasStarted) {
-            startWhisperRecord();
-        }
-    }, [mode, modelState, isOpen, isListening, startWhisperRecord, hasStarted]);
 
     useEffect(() => () => {
         shouldAutoRef.current = false;
@@ -549,7 +559,10 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
         }
 
         if (t.match(/\b(cancelar todo|reiniciar|empezar de nuevo)\b/)) {
-            cur = { tipo: "", monto: 0, descripcion: "", categoria: "", responsibles: [], fecha: new Date().toISOString().split("T")[0] };
+            const defaultResp = availableResponsibles.length > 0 
+                ? [{ name: availableResponsibles[0].name, percentage: 100 }]
+                : [{ name: "Principal", percentage: 100 }];
+            cur = { tipo: "", monto: 0, descripcion: "", categoria: "", responsibles: defaultResp, fecha: new Date().toISOString().split("T")[0] };
             commit(cur); setCurrentStep("TIPO"); stepRef.current = "TIPO";
             speak("Cancelado. ¿Ingreso o egreso?", () => triggerRecord()); return;
         }
@@ -562,7 +575,10 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
                 submitTransaction(cur);
                 setTimeout(() => onClose(), 3000);
             } else if (t.match(/\b(no|cancelar|incorrecto|mal)\b/)) {
-                cur = { tipo: "", monto: 0, descripcion: "", categoria: "", responsibles: [], fecha: new Date().toISOString().split("T")[0] };
+                const defaultResp = availableResponsibles.length > 0 
+                    ? [{ name: availableResponsibles[0].name, percentage: 100 }]
+                    : [{ name: "Principal", percentage: 100 }];
+                cur = { tipo: "", monto: 0, descripcion: "", categoria: "", responsibles: defaultResp, fecha: new Date().toISOString().split("T")[0] };
                 commit(cur); setCurrentStep("TIPO"); stepRef.current = "TIPO";
                 speak("Cancelado. ¿Ingreso o egreso?", () => triggerRecord());
             } else { speak("¿Aprobado? Responde sí o no.", () => triggerRecord()); }
@@ -575,9 +591,15 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
         const monto = extractMonto(t);
         if (monto && cur.monto === 0) { cur.monto = monto; updated = true; }
         const cat = extractCategoria(t, cur.tipo || "expense");
-        if (cat && !cur.categoria) { cur.categoria = cat.name; updated = true; }
+        if (cat && !cur.categoria) { 
+            cur.categoria = cat.name; 
+            if (!cur.descripcion) {
+                cur.descripcion = cat.name; // Default description to category name
+            }
+            updated = true; 
+        }
         const resps = extractResponsables(t);
-        if (resps.length > 0 && cur.responsibles.length === 0) {
+        if (resps.length > 0) {
             const pct = Math.floor(100 / resps.length);
             cur.responsibles = resps.map((r, i) => ({ ...r, percentage: i === resps.length - 1 ? 100 - pct * (resps.length - 1) : pct }));
             updated = true;
@@ -589,6 +611,8 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
         commit(cur);
         determineNextStep(cur, updated);
     }, [availableCategories, availableResponsibles]);
+
+    handleStepLogicRef.current = handleStepLogic;
 
     const commit = (d: typeof data) => { setData(d); dataRef.current = d; };
 
@@ -632,6 +656,58 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
         const [err, ok] = prompts[next] ?? ["Continúa.", "Continúa."];
         speak(updated ? ok : err, () => triggerRecord());
     }, [speak, triggerRecord]);
+
+    // ─── Lifecycle ────────────────────────────────────────────────────────────
+
+    useEffect(() => {
+        if (isOpen) {
+            shouldAutoRef.current = true;
+            
+            // Check if we have a pre-acquired stream from user click (vital for iOS auto-start)
+            const hasPreAcquired = typeof window !== "undefined" && !!(window as any).preAcquiredVoiceStream;
+            
+            // Always set hasStarted to true so it welcomes and starts recording immediately
+            setHasStarted(true);
+            hasStartedRef.current = true;
+            
+            const defaultResp = availableResponsibles.length > 0 
+                ? [{ name: availableResponsibles[0].name, percentage: 100 }]
+                : [{ name: "Principal", percentage: 100 }];
+            
+            setCurrentStep("TIPO");
+            setTranscript("");
+            setPermissionDenied(false);
+            setManualText("");
+            setData({ tipo: "", monto: 0, descripcion: "", categoria: "", responsibles: defaultResp, fecha: new Date().toISOString().split("T")[0] });
+            detectMode();
+            
+            setStatusMsg("Iniciando dictado...");
+            // Greet immediately since the engine is unlocked
+            speak("Hola. ¿Este registro es un ingreso o un egreso?", () => {
+                triggerRecord();
+            });
+        } else {
+            shouldAutoRef.current = false;
+            setHasStarted(false);
+            hasStartedRef.current = false;
+            window.speechSynthesis?.cancel();
+            stopSpeechAPI();
+            stopWhisperRecord();
+            streamRef.current?.getTracks().forEach((t) => t.stop());
+            streamRef.current = null;
+        }
+    }, [isOpen, triggerRecord, speak]);
+
+    // Auto-start recording when mode is resolved and panel is open
+    useEffect(() => {
+        if (!isOpen || !shouldAutoRef.current) return;
+        if (mode === "speech-api" && modelState === "ready" && !isListening && !isSpeakingRef.current) {
+            // Speech API starts on button tap, not auto
+        }
+        if (mode === "whisper" && modelState === "ready" && !isListening && !isSpeakingRef.current && hasStarted) {
+            startWhisperRecord();
+        }
+    }, [mode, modelState, isOpen, isListening, startWhisperRecord, hasStarted]);
 
     const submitTransaction = (d: typeof data) => {
         if (!user) return;

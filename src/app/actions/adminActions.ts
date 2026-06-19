@@ -60,9 +60,10 @@ export async function getAdminStats() {
         if (!profile || profile.role !== 'admin') {
             console.log(`[getAdminStats] Detectado administrador principal ${loggedInEmail} con rol incorrecto o sin perfil. Auto-reparando...`);
             
+            let updateErrMessage = "";
             if (!profile) {
                 // Crear perfil si no existe
-                await supabaseAdmin.from('profiles').insert({
+                const { error: insErr } = await supabaseAdmin.from('profiles').insert({
                     id: session.user.id,
                     email: session.user.email,
                     display_name: process.env.ADMIN_NAME || 'Administrador',
@@ -70,22 +71,25 @@ export async function getAdminStats() {
                     tour_completed: true,
                     subscription_status: 'active'
                 });
+                if (insErr) updateErrMessage = "Insert error: " + insErr.message;
             } else {
                 // Actualizar a admin si existe pero no lo es
-                await supabaseAdmin.from('profiles')
+                const { error: updErr } = await supabaseAdmin.from('profiles')
                     .update({ role: 'admin', subscription_status: 'active' })
                     .eq('id', session.user.id);
+                if (updErr) updateErrMessage = "Update error: " + updErr.message;
             }
             
             // Re-verificar
-            const { data: refreshedProfile } = await supabaseAdmin
+            const { data: refreshedProfile, error: refreshError } = await supabaseAdmin
                 .from('profiles')
                 .select('*')
                 .eq('id', session.user.id)
                 .single();
             
             if (refreshedProfile?.role !== 'admin') {
-                throw new Error(`Acceso denegado: No se pudo auto-reparar el perfil de administrador para ${session.user.email}`);
+                const details = `Profile exists: ${!!profile}, Target Email: ${adminEmail}, Logged Email: ${loggedInEmail}, Refreshed Role: ${refreshedProfile?.role || 'null'}, Refresh Error: ${refreshError?.message || 'none'}, DB Error: ${updateErrMessage || 'none'}`;
+                throw new Error(`Acceso denegado: No se pudo auto-reparar el perfil de administrador para ${session.user.email}. Detalles: ${details}`);
             }
         }
     } else {
@@ -123,22 +127,29 @@ export async function getAdminStats() {
             const planName = p.plans?.name || 'Gratis / Desconocido';
             planCounts[planName] = (planCounts[planName] || 0) + 1;
             
-            // Consideramos activo si no está eliminado y tiene un plan
+            // Consideramos activo si no está eliminado
             if (!p.deleted_at) {
                 activeUsers++;
             }
 
+            // Un trial o licencia se considera expirada si la fecha fin de trial (o fin de periodo actual) está en el pasado
+            // y el estado de la suscripción no es 'active' (es decir, no ha pagado)
             const isTrialExpired = p.trial_end_at && new Date(p.trial_end_at) < now;
-            if (isTrialExpired && (!p.plan_id || planName === 'Gratis / Desconocido')) {
+            const isPeriodExpired = p.current_period_end && new Date(p.current_period_end) < now;
+            const hasExpired = (isTrialExpired || isPeriodExpired) && p.subscription_status !== 'active';
+
+            if (hasExpired) {
                 expiredTrialUsers++;
             }
         });
     }
 
-    const planDistribution = Object.keys(planCounts).map(name => ({
-        name,
-        value: planCounts[name]
-    }));
+    const planDistribution = Object.keys(planCounts)
+        .map(name => ({
+            name,
+            value: planCounts[name]
+        }))
+        .sort((a, b) => b.value - a.value);
 
     return {
         data: {

@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
     "10.0.0.*",      // Hotspot / redes corporativas
     "172.16.*",      // Docker / VPN
   ],
+  reactStrictMode: false,
+  poweredByHeader: false,
 };
 
 export default nextConfig;

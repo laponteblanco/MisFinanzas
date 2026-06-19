@@ -104,7 +104,8 @@ export const useTransactions = create<TransactionState>((set, get) => ({
           .eq("user_id", userId)
           .is("deleted_at", null)
           .order("date", { ascending: false })
-          .order("created_at", { ascending: false }),
+          .order("created_at", { ascending: false })
+          .limit(2000),
         supabase.from("categories").select("name, budget, emoji").or(`user_id.eq.${userId},user_id.is.null`)
       ]);
 

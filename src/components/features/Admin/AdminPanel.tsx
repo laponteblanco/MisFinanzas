@@ -193,7 +193,7 @@ export const AdminPanel = ({ isOpen, onClose }: AdminPanelProps) => {
                                         </h4>
                                         <div className="h-[250px] w-full">
                                             {stats.planDistribution && stats.planDistribution.length > 0 ? (
-                                                <ResponsiveContainer width="100%" height="100%">
+                                                <ResponsiveContainer width="100%" height={250}>
                                                     <PieChart>
                                                         <Pie
                                                             data={stats.planDistribution}
