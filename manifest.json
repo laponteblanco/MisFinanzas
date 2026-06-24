@@ -1,10 +1,10 @@
 {
   "name": "MisFinanzasPersonales",
-  "short_name": "MFPersonales",
+  "short_name": "MFP",
   "description": "Tu centro de inteligencia financiera y gestión de gastos con IA.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "portrait",
   "background_color": "#050505",
   "theme_color": "#050505",
   "icons": [

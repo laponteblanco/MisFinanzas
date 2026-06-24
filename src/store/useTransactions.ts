@@ -98,6 +98,7 @@ export const useTransactions = create<TransactionState>((set, get) => ({
     set({ loading: true });
     
     try {
+      // 1. Carga rápida inicial: Límite de 100 transacciones para renderizado instantáneo
       const [txRes, catDataRes] = await Promise.all([
         supabase.from("transactions")
           .select("*")
@@ -105,7 +106,7 @@ export const useTransactions = create<TransactionState>((set, get) => ({
           .is("deleted_at", null)
           .order("date", { ascending: false })
           .order("created_at", { ascending: false })
-          .limit(2000),
+          .limit(100),
         supabase.from("categories").select("name, budget, emoji").or(`user_id.eq.${userId},user_id.is.null`)
       ]);
 
@@ -114,7 +115,6 @@ export const useTransactions = create<TransactionState>((set, get) => ({
         get().applyFilters();
         get().calculateKPIs();
       }
-
 
       if (!catDataRes.error && catDataRes.data) {
         const dynamicBudgets: Record<string, number> = {};
@@ -125,12 +125,29 @@ export const useTransactions = create<TransactionState>((set, get) => ({
       }
 
       set({ _lastFetchedAt: Date.now(), _cachedUserId: userId });
+      set({ loading: false }); // Liberamos la UI rápidamente para quitar el Skeleton
+
+      // 2. Carga en segundo plano (background) del historial completo (hasta 2000)
+      // Solo es necesaria si la consulta rápida trajo el máximo posible de 100 registros
+      if (txRes.data && txRes.data.length === 100) {
+        supabase.from("transactions")
+          .select("*")
+          .eq("user_id", userId)
+          .is("deleted_at", null)
+          .order("date", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(2000)
+          .then((fullTxRes) => {
+            if (!fullTxRes.error && fullTxRes.data) {
+              set({ transactions: fullTxRes.data });
+              get().applyFilters();
+              get().calculateKPIs();
+            }
+          });
+      }
     } catch (err) {
       console.error("Error al cargar transacciones:", err);
-    } finally {
       set({ loading: false });
-      
-
     }
   },
 
