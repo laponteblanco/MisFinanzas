@@ -9,14 +9,14 @@ import { useTransactions } from "@/store/useTransactions";
 import { useSettings } from "@/store/useSettings";
 import { formatNumberWithDots, parseNumericString, cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
+import { useDictation } from "@/hooks/useDictation";
 
 interface TransactionFormProps {
     isOpen: boolean;
     onClose: () => void;
-    onVoiceClick?: () => void;
 }
 
-export const TransactionForm = ({ isOpen, onClose, onVoiceClick }: TransactionFormProps) => {
+export const TransactionForm = ({ isOpen, onClose }: TransactionFormProps) => {
     const { user, profile } = useAuth();
     const { has_active_access } = useLicense();
     const addTransaction = useTransactions(state => state.addTransaction);
@@ -40,6 +40,43 @@ export const TransactionForm = ({ isOpen, onClose, onVoiceClick }: TransactionFo
     const [category, setCategory] = useState("");
     const [date, setDate] = useState(getLocalDatetimeString(new Date()));
     const [responsibles, setResponsibles] = useState<any[]>([]);
+
+    const { startDictation, stopDictation, status: dictationStatus, error: dictationError } = useDictation();
+
+    const speak = (text: string) => {
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'es-MX';
+            window.speechSynthesis.speak(utterance);
+        }
+    };
+
+    const handleDictation = async () => {
+        if (dictationStatus === 'listening') {
+            stopDictation();
+            return;
+        }
+        try {
+            speak("Te escucho");
+            const result = await startDictation();
+            if (result) {
+                setType(result.tipo === 'gasto' ? 'expense' : 'income');
+                if (result.monto !== null) setAmount(result.monto.toString());
+                if (result.categoria) setCategory(result.categoria);
+                if (result.descripcion) setDescription(result.descripcion);
+                if (result.fecha) {
+                    setDate(`${result.fecha}T12:00`);
+                }
+                speak(`Listo. ${result.tipo === 'gasto' ? 'Gasto' : 'Ingreso'} de ${result.monto} registrado. Revisa los datos.`);
+            } else if (dictationError) {
+                speak(dictationError);
+            }
+        } catch (e: any) {
+            console.error("Error en dictado:", e);
+            speak("Hubo un error al procesar el dictado.");
+        }
+    };
 
     useEffect(() => {
         if (user?.id) fetchSettings(user.id);
@@ -158,15 +195,31 @@ export const TransactionForm = ({ isOpen, onClose, onVoiceClick }: TransactionFo
                             <h3 className="text-xl font-black tracking-tight text-[var(--theme-text)]">
                                 {transactionToEdit ? "Editar Movimiento" : "Nuevo Movimiento"}
                             </h3>
-                            {!transactionToEdit && onVoiceClick && (
+                            {!transactionToEdit && (
                                 <button
                                     type="button"
-                                    onClick={onVoiceClick}
-                                    className="p-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 hover:text-blue-300 rounded-2xl border border-blue-500/20 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                                    onClick={handleDictation}
+                                    className={cn(
+                                        "p-2 rounded-2xl border transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer",
+                                        dictationStatus === 'listening' ? "bg-red-600/20 text-red-400 border-red-500/30 shadow-[0_0_20px_rgba(220,38,38,0.3)] animate-pulse" :
+                                        dictationStatus === 'processing' ? "bg-amber-600/20 text-amber-400 border-amber-500/30" :
+                                        dictationStatus === 'success' ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30" :
+                                        "bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 hover:text-blue-300 border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                                    )}
                                     title="Dictar por voz"
                                 >
-                                    <Mic size={14} className="animate-pulse" />
-                                    <span className="text-[10px] font-black uppercase tracking-wider">Dictar</span>
+                                    {dictationStatus === 'processing' ? (
+                                        <div className="w-3.5 h-3.5 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
+                                    ) : dictationStatus === 'success' ? (
+                                        <Check size={14} />
+                                    ) : (
+                                        <Mic size={14} className={dictationStatus === 'listening' ? "animate-bounce" : ""} />
+                                    )}
+                                    <span className="text-[10px] font-black uppercase tracking-wider">
+                                        {dictationStatus === 'listening' ? 'Escuchando...' :
+                                         dictationStatus === 'processing' ? 'Procesando...' :
+                                         dictationStatus === 'success' ? '¡Listo!' : 'Dictar'}
+                                    </span>
                                 </button>
                             )}
                         </div>
@@ -397,6 +450,11 @@ export const TransactionForm = ({ isOpen, onClose, onVoiceClick }: TransactionFo
                         {error && (
                             <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-500 text-xs font-bold animate-in fade-in slide-in-from-top-2">
                                 <AlertCircle size={16} /> {error}
+                            </div>
+                        )}
+                        {dictationError && (
+                            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center gap-3 text-amber-500 text-xs font-bold animate-in fade-in slide-in-from-top-2">
+                                <AlertCircle size={16} /> {dictationError}
                             </div>
                         )}
 

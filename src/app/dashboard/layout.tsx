@@ -218,10 +218,6 @@ export default function DashboardLayout({
                 <TransactionForm 
                     isOpen={isFormOpen} 
                     onClose={() => setIsFormOpen(false)} 
-                    onVoiceClick={() => {
-                        setIsFormOpen(false);
-                        handleVoiceClick();
-                    }}
                 />
             )}
             {isSettingsOpen && <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />}

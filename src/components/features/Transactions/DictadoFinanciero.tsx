@@ -636,6 +636,10 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
         if (!cur.categoria) missing.push("CATEGORIA");
         if (cur.responsibles.length === 0) missing.push("RESPONSABLES");
 
+        if (!shouldAutoRef.current) {
+            setStatusMsg("Toca el micrófono para hablar");
+        }
+
         if (missing.length === 0) {
             setCurrentStep("RESUMEN"); stepRef.current = "RESUMEN";
             const msg = `Resumen: ${cur.tipo === "income" ? "Ingreso" : "Egreso"} de ${cur.monto} pesos, categoría ${cur.categoria}, responsables: ${cur.responsibles.map((r: any) => r.name).join(", ")}. ¿Aprobado?`;
@@ -661,7 +665,7 @@ export const DictadoFinanciero = ({ isOpen, onClose }: DictadoFinancieroProps) =
 
     useEffect(() => {
         if (isOpen) {
-            shouldAutoRef.current = true;
+            shouldAutoRef.current = false;
             
             // Check if we have a pre-acquired stream from user click (vital for iOS auto-start)
             const hasPreAcquired = typeof window !== "undefined" && !!(window as any).preAcquiredVoiceStream;
