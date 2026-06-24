@@ -24,13 +24,13 @@ export function AIFab({ onClick, onLongPress, disabled, hidden, title, dataTour,
   const pressTimer = useRef<NodeJS.Timeout | null>(null);
   const isLongPressTriggered = useRef<boolean>(false);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handlePointerDown = () => {
     if (disabled) return;
     isLongPressTriggered.current = false;
 
-    // Synchronously unlock TTS and Mic stream on touch start (direct user gesture)
+    // Synchronously unlock TTS on touch start (direct user gesture)
     if (typeof window !== "undefined") {
-      // 1. Unlock TTS
+      // Unlock TTS
       if ("speechSynthesis" in window) {
         try {
           const silent = new SpeechSynthesisUtterance("");
@@ -39,23 +39,6 @@ export function AIFab({ onClick, onLongPress, disabled, hidden, title, dataTour,
         } catch (err) {
           console.error("TTS unlock error in FAB:", err);
         }
-      }
-      
-      // 2. Pre-acquire stream (non-blocking background call)
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000, channelCount: 1 }
-          }).then((stream) => {
-            (window as any).preAcquiredVoiceStream = stream;
-          }).catch((err) => {
-            console.error("Mic pre-acquire error in FAB:", err);
-          });
-        } else {
-          console.warn("navigator.mediaDevices.getUserMedia is not available in FAB");
-        }
-      } catch (err) {
-        console.error("Mic pre-acquire setup error in FAB:", err);
       }
     }
 
@@ -71,15 +54,6 @@ export function AIFab({ onClick, onLongPress, disabled, hidden, title, dataTour,
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
       pressTimer.current = null;
-    }
-
-    // If it was NOT a long press (i.e. short click), discard and stop the pre-acquired stream immediately
-    if (!isLongPressTriggered.current) {
-      if (typeof window !== "undefined" && (window as any).preAcquiredVoiceStream) {
-        const stream = (window as any).preAcquiredVoiceStream;
-        stream.getTracks().forEach((t: any) => t.stop());
-        (window as any).preAcquiredVoiceStream = null;
-      }
     }
   };
 
